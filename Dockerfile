@@ -12,7 +12,11 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+RUN pnpm build \
+    # Next standalone tracing may include both glibc and musl sharp binaries.\
+    # The runtime image is Alpine/musl, so the glibc variants are dead weight.\
+    && rm -rf .next/standalone/node_modules/.pnpm/@img+sharp-libvips-linux-x64@* \
+              .next/standalone/node_modules/.pnpm/@img+sharp-linux-x64@*
 
 FROM base AS runner
 WORKDIR /app
