@@ -141,6 +141,8 @@ export interface SiteConfig {
   background_image_url: string;
   background_blur: string;
   background_overlay: string;
+  site_logo_url: string;
+  icon_opacity: string;
   admin_password: string;
   admin_session: string;
 }
@@ -152,6 +154,8 @@ const defaultConfig: SiteConfig = {
   background_image_url: "",
   background_blur: "1",
   background_overlay: "80",
+  site_logo_url: "",
+  icon_opacity: "100",
   admin_password: "",
   admin_session: "",
 };
@@ -167,6 +171,8 @@ export function getConfig(): SiteConfig {
     background_image_url: map.get("background_image_url") || defaultConfig.background_image_url,
     background_blur: map.get("background_blur") || defaultConfig.background_blur,
     background_overlay: map.get("background_overlay") || defaultConfig.background_overlay,
+    site_logo_url: map.get("site_logo_url") || defaultConfig.site_logo_url,
+    icon_opacity: map.get("icon_opacity") || defaultConfig.icon_opacity,
     admin_password: map.get("admin_password") || "",
     admin_session: map.get("admin_session") || "",
   };

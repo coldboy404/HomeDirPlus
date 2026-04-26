@@ -1,14 +1,14 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { updateConfigAction, uploadBackgroundAction } from "@/app/dash/actions";
+import { updateConfigAction, uploadBackgroundAction, uploadSiteLogoAction } from "@/app/dash/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUp, Loader2, Save, X } from "lucide-react";
 
-export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; background_overlay: string } }) {
+export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; background_overlay: string; site_logo_url: string; icon_opacity: string } }) {
   const [form, setForm] = useState({
     site_name: config.site_name,
     site_description: config.site_description,
@@ -16,43 +16,65 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
     background_image_url: config.background_image_url,
     background_blur: config.background_blur,
     background_overlay: config.background_overlay,
+    site_logo_url: config.site_logo_url,
+    icon_opacity: config.icon_opacity,
   });
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const readFileAsDataUrl = useCallback((file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  }), []);
 
   const handleUploadBackground = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
     if (file.size > 8 * 1024 * 1024) { toast.error("背景图片不能超过 8MB"); return; }
-    setUploading(true);
+    setUploadingBackground(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
-      const result = await uploadBackgroundAction(dataUrl);
+      const result = await uploadBackgroundAction(await readFileAsDataUrl(file));
       if (!result.success) { toast.error(result.error); return; }
       setForm((p) => ({ ...p, background_image_url: result.data }));
       toast.success("背景图片已上传，记得保存配置");
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploadingBackground(false);
+      if (backgroundInputRef.current) backgroundInputRef.current.value = "";
     }
-  }, []);
+  }, [readFileAsDataUrl]);
+
+  const handleUploadLogo = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
+    if (file.size > 4 * 1024 * 1024) { toast.error("主站图片不能超过 4MB"); return; }
+    setUploadingLogo(true);
+    try {
+      const result = await uploadSiteLogoAction(await readFileAsDataUrl(file));
+      if (!result.success) { toast.error(result.error); return; }
+      setForm((p) => ({ ...p, site_logo_url: result.data }));
+      toast.success("主站图片已上传，记得保存配置");
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = "";
+    }
+  }, [readFileAsDataUrl]);
 
   const handleSave = useCallback(async () => {
     if (!form.site_name.trim()) { toast.error("站点名称不能为空"); return; }
     if (!form.site_description.trim()) { toast.error("站点描述不能为空"); return; }
-    const backgroundImage = form.background_image_url.trim();
-    if (backgroundImage) {
-      try {
-        const url = new URL(backgroundImage);
-        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("invalid protocol");
-      } catch {
-        toast.error("背景图片地址格式无效，仅支持 http/https");
-        return;
+    for (const [value, label] of [[form.background_image_url, "背景图片"], [form.site_logo_url, "主站图片"]] as const) {
+      const imageUrl = value.trim();
+      if (imageUrl) {
+        try {
+          const url = new URL(imageUrl);
+          if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("invalid protocol");
+        } catch {
+          toast.error(`${label}地址格式无效，仅支持 http/https`);
+          return;
+        }
       }
     }
     setSaving(true);
@@ -98,9 +120,46 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
             <p className="text-[11px] text-muted-foreground">支持 HTML，留空则不显示</p>
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="cfg_logo">主站图片</Label>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleUploadLogo(file);
+              }}
+            />
+            <div className="flex gap-2">
+              <Input
+                id="cfg_logo"
+                value={form.site_logo_url}
+                onChange={(e) => setForm((p) => ({ ...p, site_logo_url: e.target.value }))}
+                placeholder="https://example.com/logo.png"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                {uploadingLogo ? <Loader2 className="size-3.5 animate-spin" /> : <ImageUp className="size-3.5" />}
+                上传
+              </Button>
+              {form.site_logo_url && (
+                <Button type="button" variant="ghost" size="icon-sm" onClick={() => setForm((p) => ({ ...p, site_logo_url: "" }))}>
+                  <X className="size-3.5" />
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">显示在首页标题左侧，支持 URL 或本地上传</p>
+            {form.site_logo_url && (
+              <div className="flex items-center gap-3 rounded-lg border bg-muted/20 p-3">
+                <img src={form.site_logo_url} alt="主站图片预览" className="size-12 rounded-lg object-contain" />
+                <span className="text-xs text-muted-foreground">主站图片预览</span>
+              </div>
+            )}
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="cfg_background">背景图片</Label>
             <input
-              ref={fileInputRef}
+              ref={backgroundInputRef}
               type="file"
               accept="image/*"
               className="hidden"
@@ -116,8 +175,8 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
                 onChange={(e) => setForm((p) => ({ ...p, background_image_url: e.target.value }))}
                 placeholder="https://example.com/background.jpg"
               />
-              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImageUp className="size-3.5" />}
+              <Button type="button" variant="outline" size="sm" onClick={() => backgroundInputRef.current?.click()} disabled={uploadingBackground}>
+                {uploadingBackground ? <Loader2 className="size-3.5 animate-spin" /> : <ImageUp className="size-3.5" />}
                 上传
               </Button>
               {form.background_image_url && (
@@ -134,6 +193,20 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
             )}
           </div>
           <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+            <div className="grid gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="cfg_icon_opacity">主页站点图标透明度</Label>
+                <span className="text-xs text-muted-foreground">{form.icon_opacity}%</span>
+              </div>
+              <Input
+                id="cfg_icon_opacity"
+                type="range"
+                min="0"
+                max="100"
+                value={form.icon_opacity}
+                onChange={(e) => setForm((p) => ({ ...p, icon_opacity: e.target.value }))}
+              />
+            </div>
             <div className="grid gap-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="cfg_background_blur">背景模糊</Label>

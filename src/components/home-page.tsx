@@ -159,10 +159,12 @@ export function HomePage({
   sites,
   categories,
   shortcuts,
+  iconOpacity,
 }: {
   sites: SiteData[];
   categories: string[];
   shortcuts: ShortcutConfig[];
+  iconOpacity: number;
 }) {
   const [active, setActive] = useState(ALL);
   const [isInternal, setIsInternal] = useState(true);
@@ -252,9 +254,9 @@ export function HomePage({
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted transition-colors sm:size-10 sm:rounded-xl">
                   {(site.icon_custom_url || site.icon_url) ? (
-                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" />
+                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" style={{ opacity: iconOpacity / 100 }} />
                   ) : (
-                    <Icon className="size-3.5 sm:size-4" />
+                    <Icon className="size-3.5 sm:size-4" style={{ opacity: iconOpacity / 100 }} />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

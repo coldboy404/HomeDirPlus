@@ -11,6 +11,7 @@ import {
   fetchFaviconAction,
   importSitesAction,
   reorderSitesAction,
+  uploadSiteIconAction,
 } from "@/app/dash/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -81,12 +82,14 @@ export function AdminSites({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [fetchingIcon, setFetchingIcon] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [orderedSites, setOrderedSites] = useState<SiteData[]>(sites);
   const [dragging, setDragging] = useState<DragState>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
 
   const groupedSites = useMemo(() => groupSites(orderedSites), [orderedSites]);
 
@@ -230,6 +233,28 @@ export function AdminSites({
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const uploadIconFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("站点图标不能超过 2MB"); return; }
+    setUploadingIcon(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const result = await uploadSiteIconAction(dataUrl);
+      if (!result.success) { toast.error(result.error); return; }
+      updateField("icon_custom_url", result.data);
+      updateField("icon_url", "");
+      toast.success("本地图标已上传");
+    } finally {
+      setUploadingIcon(false);
+      if (iconFileInputRef.current) iconFileInputRef.current.value = "";
     }
   }, []);
 
@@ -406,8 +431,18 @@ export function AdminSites({
 
             {/* 自定义图标地址 */}
             <div className="rounded-lg border bg-muted/20 p-3">
+              <input
+                ref={iconFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void uploadIconFile(file);
+                }}
+              />
               <div className="mb-2 flex items-center justify-between">
-                <div className="text-[11px] font-medium text-muted-foreground">自定义图标 <span className="text-muted-foreground/40">图片地址优先显示</span></div>
+                <div className="text-[11px] font-medium text-muted-foreground">自定义图标 <span className="text-muted-foreground/40">本地上传或图片地址优先显示</span></div>
                 {form.icon_custom_url && (
                   <button
                     type="button"
@@ -429,8 +464,12 @@ export function AdminSites({
                   placeholder="https://example.com/icon.png"
                   className="h-7 flex-1 text-xs"
                 />
+                <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => iconFileInputRef.current?.click()} disabled={uploadingIcon}>
+                  {uploadingIcon ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />}
+                  上传
+                </Button>
               </div>
-              <p className="mt-1.5 pl-8 text-[10px] text-muted-foreground/50">支持 http/https 图片地址；留空时使用获取图标或 Lucide 图标。</p>
+              <p className="mt-1.5 pl-8 text-[10px] text-muted-foreground/50">支持本地上传或 http/https 图片地址；留空时使用获取图标或 Lucide 图标。</p>
             </div>
 
             {/* 分类 */}

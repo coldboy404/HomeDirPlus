@@ -326,22 +326,38 @@ export async function deleteShortcutAction(id: string): Promise<ActionResult> {
   }
 }
 
-export async function uploadBackgroundAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
-  const authErr = await requireAuth();
-  if (authErr) return authErr;
+function saveImageDataUrl(dataUrl: string, maxMb: number, label: string): { success: true; data: string } | { success: false; error: string } {
   const match = dataUrl.match(/^data:(image\/(?:png|jpe?g|webp|gif|svg\+xml));base64,(.+)$/i);
   if (!match) return { success: false, error: "仅支持 png/jpg/webp/gif/svg 图片" };
 
   try {
     const buf = Buffer.from(match[2], "base64");
     if (buf.length < 10) return { success: false, error: "图片文件为空" };
-    if (buf.length > 8 * 1024 * 1024) return { success: false, error: "背景图片不能超过 8MB" };
+    if (buf.length > maxMb * 1024 * 1024) return { success: false, error: `${label}不能超过 ${maxMb}MB` };
     const filename = saveIcon(buf);
     return { success: true, data: `/api/icons/${filename}` };
   } catch (e) {
-    console.error("上传背景失败:", e);
-    return { success: false, error: "上传背景失败" };
+    console.error(`${label}上传失败:`, e);
+    return { success: false, error: `${label}上传失败` };
   }
+}
+
+export async function uploadBackgroundAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  return saveImageDataUrl(dataUrl, 8, "背景图片");
+}
+
+export async function uploadSiteIconAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  return saveImageDataUrl(dataUrl, 2, "站点图标");
+}
+
+export async function uploadSiteLogoAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  return saveImageDataUrl(dataUrl, 4, "主站图片");
 }
 
 function clampPercent(value: string | undefined, fallback: string): string {
@@ -355,19 +371,23 @@ export async function updateConfigAction(config: Partial<SiteConfig>): Promise<A
   if (authErr) return authErr;
   if (config.site_name !== undefined && !config.site_name.trim()) return { success: false, error: "站点名称不能为空" };
   if (config.site_description !== undefined && !config.site_description.trim()) return { success: false, error: "站点描述不能为空" };
-  const backgroundImage = config.background_image_url?.trim();
-  if (backgroundImage) {
-    try {
-      const url = new URL(backgroundImage);
-      if (url.protocol !== "http:" && url.protocol !== "https:") return { success: false, error: "背景图片地址仅支持 http/https" };
-    } catch {
-      return { success: false, error: "背景图片地址格式无效" };
+  const imageFields: [keyof SiteConfig, string][] = [["background_image_url", "背景图片"], ["site_logo_url", "主站图片"]];
+  for (const [key, label] of imageFields) {
+    const imageUrl = config[key]?.trim();
+    if (imageUrl) {
+      try {
+        const url = new URL(imageUrl);
+        if (url.protocol !== "http:" && url.protocol !== "https:") return { success: false, error: `${label}地址仅支持 http/https` };
+      } catch {
+        return { success: false, error: `${label}地址格式无效` };
+      }
     }
   }
   const updates = {
     ...config,
     background_blur: clampPercent(config.background_blur, "1"),
     background_overlay: clampPercent(config.background_overlay, "80"),
+    icon_opacity: clampPercent(config.icon_opacity, "100"),
   };
   try {
     updateConfig(updates);
