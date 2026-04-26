@@ -76,7 +76,8 @@ export async function createSiteAction(formData: SiteFormInput): Promise<ActionR
   if (error) return { success: false, error };
 
   try {
-    createSite(formData);
+    const data = await autoFillFavicon(formData);
+    createSite(data);
     revalidatePath("/");
     revalidatePath("/dash");
     return { success: true };
@@ -152,7 +153,8 @@ export async function importSitesAction(jsonText: string, mode: ImportMode): Pro
 
   try {
     const parsed = parseImportJson(jsonText);
-    const count = importSites(parsed.sites.map((site) => ({ ...site, icon: site.icon || "Globe" })), mode);
+    const sites = await Promise.all(parsed.sites.map((site) => autoFillFavicon({ ...site, icon: site.icon || "Globe" })));
+    const count = importSites(sites, mode);
     revalidatePath("/");
     revalidatePath("/dash");
     return { success: true, count, format: parsed.format };
@@ -237,60 +239,100 @@ export async function deleteCategoryAction(name: string): Promise<ActionResult> 
   }
 }
 
+function normalizeIconHref(href: string, baseUrl: string): string | null {
+  if (!href || href.startsWith("data:")) return null;
+  try {
+    return new URL(href, baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function isPrivateHost(hostname: string): boolean {
+  return /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|localhost$|127\.|0\.)/.test(hostname) || hostname.endsWith(".local");
+}
+
+async function fetchImageBuffer(url: string, timeout = 3500): Promise<Buffer | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(timeout),
+      redirect: "follow",
+      headers: { "user-agent": "Mozilla/5.0 HomeDirPlus favicon fetcher" },
+    });
+    if (!res.ok) return null;
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 10 || buf.length > 2 * 1024 * 1024) return null;
+    if (!ct || ct.includes("image") || ct.includes("icon") || ct.includes("octet-stream")) return buf;
+    const head = buf.subarray(0, 16).toString("utf8").trimStart();
+    if (buf[0] === 0x00 || buf[0] === 0x89 || buf[0] === 0xff || buf[0] === 0x47 || buf[0] === 0x52 || head.startsWith("<svg")) return buf;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchFavicon(url: string): Promise<string | null> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  const { origin, hostname } = parsed;
+  const candidates: string[] = [];
+
+  try {
+    const htmlRes = await fetch(origin, {
+      signal: AbortSignal.timeout(3500),
+      redirect: "follow",
+      headers: { "user-agent": "Mozilla/5.0 HomeDirPlus favicon fetcher" },
+    });
+    if (htmlRes.ok) {
+      const html = await htmlRes.text();
+      const links = [...html.matchAll(/<link\s+[^>]*>/gi)].map((m) => m[0]);
+      const preferredRels = ["apple-touch-icon", "mask-icon", "shortcut icon", "icon"];
+      for (const rel of preferredRels) {
+        for (const tag of links) {
+          const relMatch = tag.match(/\brel=["']([^"']+)["']/i);
+          if (!relMatch || !relMatch[1].toLowerCase().includes(rel)) continue;
+          const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1];
+          const normalized = href ? normalizeIconHref(href, htmlRes.url || origin) : null;
+          if (normalized && !candidates.includes(normalized)) candidates.push(normalized);
+        }
+      }
+    }
+  } catch {}
+
+  for (const p of ["/apple-touch-icon.png", "/apple-touch-icon-precomposed.png", "/favicon.svg", "/favicon.png", "/favicon.ico", "/assets/favicon.ico"]) {
+    candidates.push(`${origin}${p}`);
+  }
+
+  if (!isPrivateHost(hostname)) {
+    candidates.push(`https://www.google.com/s2/favicons?domain=${hostname}&sz=128`);
+    candidates.push(`https://icons.duckduckgo.com/ip3/${hostname}.ico`);
+  }
+
+  for (const candidate of [...new Set(candidates)]) {
+    const iconBuf = await fetchImageBuffer(candidate);
+    if (iconBuf) return saveIcon(iconBuf);
+  }
+  return null;
+}
+
+async function autoFillFavicon<T extends { icon_url?: string; icon_custom_url?: string; url_external?: string; url_internal?: string }>(site: T): Promise<T> {
+  if (site.icon_url || site.icon_custom_url) return site;
+  const url = site.url_external || site.url_internal;
+  if (!url) return site;
+  const icon = await fetchFavicon(url);
+  return icon ? { ...site, icon_url: icon } : site;
+}
+
 // 抓取 favicon 并保存到本地文件
 export async function fetchFaviconAction(url: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
   if (!(await isAuthenticated())) return { success: false, error: "未登录" };
-  try {
-    const { origin, hostname, protocol } = new URL(url);
-    const tryFetch = async (u: string): Promise<Buffer | null> => {
-      try {
-        const res = await fetch(u, { signal: AbortSignal.timeout(5000), redirect: "follow" });
-        if (!res.ok) return null;
-        const ct = res.headers.get("content-type") || "";
-        if (!ct.includes("image") && !ct.includes("icon") && !ct.includes("octet-stream")) return null;
-        const buf = Buffer.from(await res.arrayBuffer());
-        if (buf.length < 10) return null;
-        return buf;
-      } catch { return null; }
-    };
-
-    let iconBuf: Buffer | null = null;
-
-    // 1) 从 HTML 解析 <link rel="icon"> href
-    try {
-      const html = await fetch(origin, { signal: AbortSignal.timeout(5000), redirect: "follow" }).then(r => r.text());
-      const m = html.match(/<link[^>]*rel=["'][^"']*icon[^"']*["'][^>]*href=["']([^"']+)["']/i)
-        || html.match(/<link[^>]*href=["']([^"']+)["'][^>]*rel=["'][^"']*icon[^"']*["']/i);
-      if (m) {
-        let href = m[1];
-        if (href.startsWith("//")) href = `${protocol}${href}`;
-        else if (href.startsWith("/")) href = `${origin}${href}`;
-        else if (!href.startsWith("http")) href = `${origin}/${href}`;
-        iconBuf = await tryFetch(href);
-      }
-    } catch {}
-
-    // 2) 常见路径
-    if (!iconBuf) {
-      for (const p of ["/favicon.ico", "/apple-touch-icon.png"]) {
-        iconBuf = await tryFetch(`${origin}${p}`);
-        if (iconBuf) break;
-      }
-    }
-
-    // 3) Google API 兜底（外网）
-    if (!iconBuf && !/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|localhost|127\.)/.test(hostname)) {
-      iconBuf = await tryFetch(`https://www.google.com/s2/favicons?domain=${hostname}&sz=128`);
-    }
-
-    if (!iconBuf) return { success: false, error: "未找到图标" };
-
-    // 保存到 data/icons/
-    const filename = saveIcon(iconBuf);
-    return { success: true, data: filename };
-  } catch {
-    return { success: false, error: "URL 格式无效" };
-  }
+  const filename = await fetchFavicon(url);
+  return filename ? { success: true, data: filename } : { success: false, error: "未找到图标" };
 }
 
 // 热键操作

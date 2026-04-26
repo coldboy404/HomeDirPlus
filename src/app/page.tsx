@@ -20,7 +20,7 @@ export default async function Page() {
             style={{ backgroundImage: `url(${backgroundImage})`, filter: `blur(${backgroundBlur}px)` }}
             aria-hidden="true"
           />
-          <div className="fixed inset-0 -z-10 bg-background/80 backdrop-blur-[1px] dark:bg-background/75" aria-hidden="true" />
+          <div className="fixed inset-0 -z-10 bg-background/30 backdrop-blur-[1px] dark:bg-background/45" aria-hidden="true" />
         </>
       )}
       <div className="mx-auto flex min-h-dvh max-w-5xl flex-col px-4 pt-8 sm:px-6 lg:px-8">
