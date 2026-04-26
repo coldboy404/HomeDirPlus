@@ -87,9 +87,8 @@ export function AdminSites({
   const [savingOrder, setSavingOrder] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [refreshOrder, setRefreshOrder] = useState(0);
 
-  const groupedSites = useMemo(() => groupSites(orderedSites), [orderedSites, refreshOrder]);
+  const groupedSites = useMemo(() => groupSites(orderedSites), [orderedSites]);
 
   if (orderedSites !== sites && orderedSites.length !== sites.length) {
     setOrderedSites(sites);

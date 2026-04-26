@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2, Loader2, Keyboard } from "lucide-react";
 
+const RESERVED_KEYS = ["K"];
+
 export interface ShortcutData {
   id: string;
   key: string;
@@ -32,8 +34,6 @@ export function AdminShortcuts({
   const [siteId, setSiteId] = useState("");
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const RESERVED_KEYS = ["K"];
 
   const handleAdd = useCallback(async () => {
     if (!key || !siteId) { toast.error("请填写热键和选择站点"); return; }
