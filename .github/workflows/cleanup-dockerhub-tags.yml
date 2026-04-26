@@ -1,0 +1,80 @@
+name: Cleanup DockerHub tags
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old sha tags
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DOCKERHUB_REPO: coldboy404/homedirplus
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          username = os.environ['DOCKERHUB_USERNAME']
+          password = os.environ['DOCKERHUB_TOKEN']
+          repo = os.environ['DOCKERHUB_REPO']
+
+          def request(url, method='GET', data=None, token=None):
+              body = None if data is None else json.dumps(data).encode()
+              headers = {'Accept': 'application/json'}
+              if body is not None:
+                  headers['Content-Type'] = 'application/json'
+              if token:
+                  headers['Authorization'] = f'JWT {token}'
+              req = urllib.request.Request(url, data=body, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  raw = resp.read()
+                  return None if not raw else json.loads(raw)
+
+          login = request('https://hub.docker.com/v2/users/login/', 'POST', {
+              'username': username,
+              'password': password,
+          })
+          token = login['token']
+
+          tags = []
+          url = f'https://hub.docker.com/v2/repositories/{repo}/tags?page_size=100'
+          while url:
+              data = request(url, token=token)
+              tags.extend(item['name'] for item in data.get('results', []))
+              url = data.get('next')
+
+          sha_tags = sorted(tag for tag in tags if tag.startswith('sha-'))
+          print('sha tags to delete:', ', '.join(sha_tags) if sha_tags else '(none)')
+
+          for tag in sha_tags:
+              req = urllib.request.Request(
+                  f'https://hub.docker.com/v2/repositories/{repo}/tags/{tag}/',
+                  headers={'Authorization': f'JWT {token}'},
+                  method='DELETE',
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      print(f'deleted {tag}: HTTP {resp.status}')
+              except urllib.error.HTTPError as error:
+                  if error.code == 404:
+                      print(f'skipped {tag}: already deleted')
+                  else:
+                      raise
+
+          remaining = []
+          url = f'https://hub.docker.com/v2/repositories/{repo}/tags?page_size=100'
+          while url:
+              data = request(url, token=token)
+              remaining.extend(item['name'] for item in data.get('results', []))
+              url = data.get('next')
+          print('remaining tags:', ', '.join(remaining) if remaining else '(none)')
+          leftover = [tag for tag in remaining if tag.startswith('sha-')]
+          if leftover:
+              raise SystemExit('sha tags still remain: ' + ', '.join(leftover))
+          PY
