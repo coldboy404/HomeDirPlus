@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   if (!hasPassword() || !(await isAuthenticated())) redirect("/dash/login");
 
-  const { sites, categories, config } = getSites();
+  const { sites, categories, categoryConfigs, config } = getSites();
   const shortcuts = getAllShortcuts().map((s) => ({ id: s.id, key: s.key, site_id: s.site_id }));
 
   // 过滤敏感字段，只传展示用的配置给客户端
@@ -27,6 +27,8 @@ export default async function AdminPage() {
     site_description: config.site_description,
     footer_text: config.footer_text,
     background_image_url: config.background_image_url,
+    background_blur: config.background_blur,
+    background_overlay: config.background_overlay,
   };
 
   return (
@@ -45,7 +47,7 @@ export default async function AdminPage() {
         </form>
       </div>
 
-      <AdminPanel sites={sites} categories={categories} config={safeConfig} shortcuts={shortcuts} />
+      <AdminPanel sites={sites} categories={categories} categoryConfigs={categoryConfigs} config={safeConfig} shortcuts={shortcuts} />
     </div>
   );
 }

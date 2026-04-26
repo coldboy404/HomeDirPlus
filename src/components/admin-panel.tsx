@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import type { SiteData } from "@/lib/types";
-type SafeConfig = { site_name: string; site_description: string; footer_text: string; background_image_url: string };
+import type { CategoryConfig, SiteData } from "@/lib/types";
+type SafeConfig = { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; background_overlay: string };
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminSites } from "@/components/admin/sites";
 import { AdminCategories } from "@/components/admin/categories";
@@ -27,11 +27,13 @@ const tabs = [
 export function AdminPanel({
   sites,
   categories,
+  categoryConfigs,
   config,
   shortcuts,
 }: {
   sites: SiteData[];
   categories: string[];
+  categoryConfigs: CategoryConfig[];
   config: SafeConfig;
   shortcuts: ShortcutData[];
 }) {
@@ -97,7 +99,7 @@ export function AdminPanel({
         <AdminSites sites={sites} categories={categories} />
       )}
       {tab === "categories" && (
-        <AdminCategories sites={sites} />
+        <AdminCategories sites={sites} categoryConfigs={categoryConfigs} />
       )}
       {tab === "shortcuts" && (
         <AdminShortcuts shortcuts={shortcuts} sites={sites} />

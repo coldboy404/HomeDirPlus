@@ -15,3 +15,8 @@ export interface ShortcutConfig {
   key: string;
   site_id: string;
 }
+
+export interface CategoryConfig {
+  name: string;
+  sort_order: number;
+}

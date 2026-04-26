@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import type { SiteData } from "@/lib/types";
+import type { CategoryConfig, SiteData } from "@/lib/types";
 import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import {
   renameCategoryAction,
   deleteCategoryAction,
+  updateCategorySortAction,
 } from "@/app/dash/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,33 +20,41 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Loader2, Save, AlertTriangle } from "lucide-react";
 
-export function AdminCategories({ sites }: { sites: SiteData[] }) {
+export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[]; categoryConfigs: CategoryConfig[] }) {
   const categoryStats = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const s of sites) map.set(s.category, (map.get(s.category) || 0) + 1);
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [sites]);
+    const countMap = new Map<string, number>();
+    const sortMap = new Map(categoryConfigs.map((category) => [category.name, category.sort_order]));
+    for (const s of sites) countMap.set(s.category, (countMap.get(s.category) || 0) + 1);
+    return Array.from(countMap.entries())
+      .map(([name, count]) => ({ name, count, sort_order: sortMap.get(name) ?? 0 }))
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+  }, [sites, categoryConfigs]);
 
   // 重命名
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [sortValue, setSortValue] = useState(0);
   const [renaming, setRenaming] = useState(false);
 
-  const openRename = (name: string) => {
+  const openRename = (name: string, sortOrder: number) => {
     setRenameTarget(name);
     setRenameValue(name);
+    setSortValue(sortOrder);
   };
 
   const handleRename = useCallback(async () => {
     if (!renameTarget) return;
     setRenaming(true);
     try {
-      const result = await renameCategoryAction(renameTarget, renameValue);
+      const name = renameValue.trim();
+      const sortResult = await updateCategorySortAction(renameTarget, sortValue);
+      if (!sortResult.success) { toast.error(sortResult.error); return; }
+      const result = await renameCategoryAction(renameTarget, name);
       if (!result.success) { toast.error(result.error); return; }
-      toast.success(`已重命名为「${renameValue}」`);
+      toast.success(`分类已保存`);
       setRenameTarget(null);
     } finally { setRenaming(false); }
-  }, [renameTarget, renameValue]);
+  }, [renameTarget, renameValue, sortValue]);
 
   // 删除
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -70,7 +79,7 @@ export function AdminCategories({ sites }: { sites: SiteData[] }) {
             暂无分类
           </div>
         ) : (
-          categoryStats.map(([cat, count]) => {
+          categoryStats.map(({ name: cat, count, sort_order }) => {
             const catSites = sites.filter((s) => s.category === cat);
             return (
               <div
@@ -80,10 +89,10 @@ export function AdminCategories({ sites }: { sites: SiteData[] }) {
                 <div className="mb-3 flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium">{cat}</div>
-                    <div className="text-xs text-muted-foreground">{count} 个站点</div>
+                    <div className="text-xs text-muted-foreground">排序 {sort_order} · {count} 个站点</div>
                   </div>
                   <div className="flex gap-1 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                    <Button variant="ghost" size="icon-sm" onClick={() => openRename(cat)}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => openRename(cat, sort_order)}>
                       <Pencil className="size-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => setDeleteTarget(cat)}>
@@ -121,18 +130,29 @@ export function AdminCategories({ sites }: { sites: SiteData[] }) {
       <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>重命名分类</DialogTitle>
+            <DialogTitle>编辑分类</DialogTitle>
             <DialogDescription>
-              将「{renameTarget}」重命名为新名称
+              修改「{renameTarget}」的名称和排序，排序越小越靠前
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2 py-2">
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              placeholder="输入新名称"
-              onKeyDown={(e) => e.key === "Enter" && handleRename()}
-            />
+          <div className="grid gap-3 py-2">
+            <div className="grid gap-1.5">
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="输入新名称"
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Input
+                type="number"
+                value={sortValue}
+                onChange={(e) => setSortValue(parseInt(e.target.value) || 0)}
+                placeholder="排序数字"
+              />
+              <p className="text-[11px] text-muted-foreground">排序越小越靠前</p>
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setRenameTarget(null)}>

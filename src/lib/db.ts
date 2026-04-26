@@ -30,6 +30,11 @@ interface SiteInput {
   sort_order?: number;
 }
 
+export interface CategoryData {
+  name: string;
+  sort_order: number;
+}
+
 const DB_PATH = path.join(process.cwd(), "data", "sites.db");
 
 let _db: InstanceType<typeof Database> | null = null;
@@ -79,6 +84,15 @@ function getDb() {
     )
   `);
 
+  // 分类配置表
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS categories (
+      name TEXT PRIMARY KEY,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
   // 热键表
   _db.exec(`
     CREATE TABLE IF NOT EXISTS shortcuts (
@@ -125,6 +139,8 @@ export interface SiteConfig {
   site_description: string;
   footer_text: string;
   background_image_url: string;
+  background_blur: string;
+  background_overlay: string;
   admin_password: string;
   admin_session: string;
 }
@@ -134,6 +150,8 @@ const defaultConfig: SiteConfig = {
   site_description: "快速访问内外网服务的导航中心",
   footer_text: "© 2026 coldboy404 · Powered by <a href=\"https://github.com/coldboy404/HomeDirPlus\">HomeDirPlus</a>",
   background_image_url: "",
+  background_blur: "1",
+  background_overlay: "80",
   admin_password: "",
   admin_session: "",
 };
@@ -147,6 +165,8 @@ export function getConfig(): SiteConfig {
     site_description: map.get("site_description") || defaultConfig.site_description,
     footer_text: map.get("footer_text") || defaultConfig.footer_text,
     background_image_url: map.get("background_image_url") || defaultConfig.background_image_url,
+    background_blur: map.get("background_blur") || defaultConfig.background_blur,
+    background_overlay: map.get("background_overlay") || defaultConfig.background_overlay,
     admin_password: map.get("admin_password") || "",
     admin_session: map.get("admin_session") || "",
   };
@@ -168,7 +188,12 @@ function genId(): string {
 
 export function getAllSites(): SiteRow[] {
   const db = getDb();
-  const rows = db.prepare("SELECT * FROM sites ORDER BY category, sort_order, name").all() as SiteRow[];
+  const rows = db.prepare(`
+    SELECT sites.*
+    FROM sites
+    LEFT JOIN categories ON categories.name = sites.category
+    ORDER BY COALESCE(categories.sort_order, 0), sites.category, sites.sort_order, sites.name
+  `).all() as SiteRow[];
 
   return rows;
 }
@@ -286,15 +311,38 @@ export function deleteSite(id: string): boolean {
 }
 
 // 分类操作
+export function getAllCategories(): CategoryData[] {
+  const db = getDb();
+  const names = db.prepare("SELECT DISTINCT category AS name FROM sites").all() as { name: string }[];
+  const saved = db.prepare("SELECT name, sort_order FROM categories").all() as CategoryData[];
+  const savedMap = new Map(saved.map((category) => [category.name, category.sort_order]));
+  return names
+    .map(({ name }) => ({ name, sort_order: savedMap.get(name) ?? 0 }))
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+}
+
 export function renameCategory(oldName: string, newName: string): number {
   const db = getDb();
   const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
+  const existing = db.prepare("SELECT sort_order FROM categories WHERE name = ?").get(oldName) as { sort_order: number } | undefined;
   const result = db.prepare("UPDATE sites SET category = ?, updated_at = ? WHERE category = ?").run(newName, now, oldName);
+  if (result.changes > 0) {
+    db.prepare("DELETE FROM categories WHERE name = ?").run(oldName);
+    db.prepare("INSERT OR REPLACE INTO categories (name, sort_order, updated_at) VALUES (?, ?, ?)").run(newName, existing?.sort_order ?? 0, now);
+  }
   return result.changes;
+}
+
+export function updateCategorySort(name: string, sortOrder: number): number {
+  const db = getDb();
+  const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
+  db.prepare("INSERT OR REPLACE INTO categories (name, sort_order, updated_at) VALUES (?, ?, ?)").run(name, sortOrder, now);
+  return (db.prepare("SELECT COUNT(*) AS count FROM sites WHERE category = ?").get(name) as { count: number }).count;
 }
 
 export function deleteCategory(name: string): number {
   const db = getDb();
+  db.prepare("DELETE FROM categories WHERE name = ?").run(name);
   const result = db.prepare("DELETE FROM sites WHERE category = ?").run(name);
   return result.changes;
 }

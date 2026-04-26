@@ -3,7 +3,10 @@ services:
     image: coldboy404/homedirplus:latest
     container_name: homedirplus
     restart: unless-stopped
+    pull_policy: always
     ports:
       - "4027:4027"
     volumes:
       - ./data:/app/data
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"

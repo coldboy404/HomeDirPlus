@@ -1,9 +1,9 @@
 import "server-only";
-import { getAllSites, getConfig, getAllShortcuts } from "@/lib/db";
-import type { SiteData, ShortcutConfig } from "@/lib/types";
+import { getAllSites, getConfig, getAllShortcuts, getAllCategories } from "@/lib/db";
+import type { SiteData, ShortcutConfig, CategoryConfig } from "@/lib/types";
 import type { SiteConfig } from "@/lib/db";
 
-export function getSites(): { sites: SiteData[]; categories: string[]; config: SiteConfig; shortcuts: ShortcutConfig[] } {
+export function getSites(): { sites: SiteData[]; categories: string[]; categoryConfigs: CategoryConfig[]; config: SiteConfig; shortcuts: ShortcutConfig[] } {
   const rows = getAllSites();
   const config = getConfig();
 
@@ -20,8 +20,9 @@ export function getSites(): { sites: SiteData[]; categories: string[]; config: S
     created_at: r.created_at,
   }));
 
-  const categories = Array.from(new Set(sites.map((s) => s.category))).sort();
+  const categoryConfigs = getAllCategories();
+  const categories = categoryConfigs.map((category) => category.name);
   const shortcuts = getAllShortcuts().map((s) => ({ key: s.key, site_id: s.site_id }));
 
-  return { sites, categories, config, shortcuts };
+  return { sites, categories, categoryConfigs, config, shortcuts };
 }

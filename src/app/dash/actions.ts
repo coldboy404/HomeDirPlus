@@ -8,6 +8,7 @@ import {
   deleteSite,
   renameCategory,
   deleteCategory,
+  updateCategorySort,
   updateConfig,
   createShortcut,
   deleteShortcut,
@@ -200,6 +201,23 @@ export async function renameCategoryAction(oldName: string, newName: string): Pr
   }
 }
 
+export async function updateCategorySortAction(name: string, sortOrder: number): Promise<ActionResult> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  if (!name) return { success: false, error: "分类名称不能为空" };
+  if (!Number.isFinite(sortOrder)) return { success: false, error: "排序数字无效" };
+
+  try {
+    updateCategorySort(name, Math.trunc(sortOrder));
+    revalidatePath("/");
+    revalidatePath("/dash");
+    return { success: true };
+  } catch (e) {
+    console.error("保存分类排序失败:", e);
+    return { success: false, error: "保存分类排序失败" };
+  }
+}
+
 export async function deleteCategoryAction(name: string): Promise<ActionResult> {
   const authErr = await requireAuth();
   if (authErr) return authErr;
@@ -308,6 +326,29 @@ export async function deleteShortcutAction(id: string): Promise<ActionResult> {
   }
 }
 
+export async function uploadBackgroundAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  const match = dataUrl.match(/^data:(image\/(?:png|jpe?g|webp|gif|svg\+xml));base64,(.+)$/i);
+  if (!match) return { success: false, error: "仅支持 png/jpg/webp/gif/svg 图片" };
+
+  try {
+    const buf = Buffer.from(match[2], "base64");
+    if (buf.length < 10) return { success: false, error: "图片文件为空" };
+    if (buf.length > 8 * 1024 * 1024) return { success: false, error: "背景图片不能超过 8MB" };
+    const filename = saveIcon(buf);
+    return { success: true, data: `/api/icons/${filename}` };
+  } catch (e) {
+    console.error("上传背景失败:", e);
+    return { success: false, error: "上传背景失败" };
+  }
+}
+
+function clampPercent(value: string | undefined, fallback: string): string {
+  const number = Number(value ?? fallback);
+  return String(Math.min(100, Math.max(0, Number.isFinite(number) ? Math.round(number) : Number(fallback))));
+}
+
 // 配置操作
 export async function updateConfigAction(config: Partial<SiteConfig>): Promise<ActionResult> {
   const authErr = await requireAuth();
@@ -323,8 +364,13 @@ export async function updateConfigAction(config: Partial<SiteConfig>): Promise<A
       return { success: false, error: "背景图片地址格式无效" };
     }
   }
+  const updates = {
+    ...config,
+    background_blur: clampPercent(config.background_blur, "1"),
+    background_overlay: clampPercent(config.background_overlay, "80"),
+  };
   try {
-    updateConfig(config);
+    updateConfig(updates);
     revalidatePath("/");
     revalidatePath("/dash");
     return { success: true };
