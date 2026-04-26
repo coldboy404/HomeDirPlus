@@ -44,20 +44,23 @@ type ExportResult = { success: true; data: string } | { success: false; error: s
 
 type ReorderInput = { id: string; category: string; sort_order: number };
 
+function isAllowedImageUrl(value: string): boolean {
+  if (value.startsWith("/api/icons/")) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function validate(data: SiteFormInput): string | null {
   if (!data.name || data.name.trim().length === 0) return "名称不能为空";
   if (data.name.length > 100) return "名称不能超过 100 个字符";
   if (!data.category || data.category.trim().length === 0) return "分类不能为空";
   if (!data.url_internal && !data.url_external) return "至少填写一个地址";
   const customIcon = data.icon_custom_url?.trim();
-  if (customIcon) {
-    try {
-      const url = new URL(customIcon);
-      if (url.protocol !== "http:" && url.protocol !== "https:") return "自定义图标地址仅支持 http/https";
-    } catch {
-      return "自定义图标地址格式无效";
-    }
-  }
+  if (customIcon && !isAllowedImageUrl(customIcon)) return "自定义图标地址格式无效";
   return null;
 }
 
@@ -357,12 +360,12 @@ export async function uploadSiteIconAction(dataUrl: string): Promise<{ success: 
 export async function uploadSiteLogoAction(dataUrl: string): Promise<{ success: true; data: string } | { success: false; error: string }> {
   const authErr = await requireAuth();
   if (authErr) return authErr;
-  return saveImageDataUrl(dataUrl, 4, "主站图片");
+  return saveImageDataUrl(dataUrl, 4, "主站图标");
 }
 
-function clampPercent(value: string | undefined, fallback: string): string {
+function clampPercent(value: string | undefined, fallback: string, min = 0): string {
   const number = Number(value ?? fallback);
-  return String(Math.min(100, Math.max(0, Number.isFinite(number) ? Math.round(number) : Number(fallback))));
+  return String(Math.min(100, Math.max(min, Number.isFinite(number) ? Math.round(number) : Number(fallback))));
 }
 
 // 配置操作
@@ -371,23 +374,16 @@ export async function updateConfigAction(config: Partial<SiteConfig>): Promise<A
   if (authErr) return authErr;
   if (config.site_name !== undefined && !config.site_name.trim()) return { success: false, error: "站点名称不能为空" };
   if (config.site_description !== undefined && !config.site_description.trim()) return { success: false, error: "站点描述不能为空" };
-  const imageFields: [keyof SiteConfig, string][] = [["background_image_url", "背景图片"], ["site_logo_url", "主站图片"]];
+  const imageFields: [keyof SiteConfig, string][] = [["background_image_url", "背景图片"], ["site_logo_url", "主站图标"]];
   for (const [key, label] of imageFields) {
     const imageUrl = config[key]?.trim();
-    if (imageUrl) {
-      try {
-        const url = new URL(imageUrl);
-        if (url.protocol !== "http:" && url.protocol !== "https:") return { success: false, error: `${label}地址仅支持 http/https` };
-      } catch {
-        return { success: false, error: `${label}地址格式无效` };
-      }
-    }
+    if (imageUrl && !isAllowedImageUrl(imageUrl)) return { success: false, error: `${label}地址格式无效` };
   }
   const updates = {
     ...config,
     background_blur: clampPercent(config.background_blur, "1"),
     background_overlay: clampPercent(config.background_overlay, "80"),
-    icon_opacity: clampPercent(config.icon_opacity, "100"),
+    icon_opacity: clampPercent(config.icon_opacity, "100", 10),
   };
   try {
     updateConfig(updates);

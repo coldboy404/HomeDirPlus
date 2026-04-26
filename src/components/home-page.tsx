@@ -33,7 +33,7 @@ function Clock() {
   }, []);
 
   return (
-    <div className="text-xs text-muted-foreground">
+    <div className="text-xs font-medium text-foreground/85 drop-shadow-sm">
       {now ? (
         <>
           <div>{getGreeting(now.getHours())} 👋</div>
@@ -99,7 +99,7 @@ function CategoryTabs({
   return (
     <div className="mb-6 flex justify-center">
       <nav
-        className="relative inline-flex flex-wrap gap-1 rounded-2xl border bg-muted/40 p-1"
+        className="relative inline-flex flex-wrap gap-1 rounded-2xl border bg-card/85 p-1 shadow-sm backdrop-blur-md"
       >
         {/* 滑动指示器：挂载后才显示 */}
         {mounted && (
@@ -120,7 +120,7 @@ function CategoryTabs({
                 ? mounted
                   ? "text-background"
                   : "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                : "text-foreground/75 hover:bg-accent/70 hover:text-foreground"
             }`}
             onClick={() => onSelect(cat)}
           >
@@ -166,6 +166,7 @@ export function HomePage({
   shortcuts: ShortcutConfig[];
   iconOpacity: number;
 }) {
+  const siteIconOpacity = Math.min(100, Math.max(10, Number.isFinite(iconOpacity) ? iconOpacity : 100)) / 100;
   const [active, setActive] = useState(ALL);
   const [isInternal, setIsInternal] = useState(true);
   const [manualOverride, setManualOverride] = useState(false);
@@ -196,11 +197,11 @@ export function HomePage({
       {/* 工具栏 */}
       <div className="mb-8 flex items-center justify-between">
         <Clock />
-        <div className="flex items-center gap-1 rounded-xl border bg-muted/40 p-1">
+        <div className="flex items-center gap-1 rounded-xl border bg-card/85 p-1 shadow-sm backdrop-blur-md">
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+            className="h-7 px-2 text-foreground/75 hover:text-foreground"
             onClick={() => setSearchOpen(true)}
           >
             <Search className="size-3.5" />
@@ -214,7 +215,7 @@ export function HomePage({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 text-foreground/75 hover:text-foreground"
             >
               <Settings className="size-3.5" />
             </Button>
@@ -254,9 +255,9 @@ export function HomePage({
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted transition-colors sm:size-10 sm:rounded-xl">
                   {(site.icon_custom_url || site.icon_url) ? (
-                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" style={{ opacity: iconOpacity / 100 }} />
+                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" style={{ opacity: siteIconOpacity }} />
                   ) : (
-                    <Icon className="size-3.5 sm:size-4" style={{ opacity: iconOpacity / 100 }} />
+                    <Icon className="size-3.5 sm:size-4" style={{ opacity: siteIconOpacity }} />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

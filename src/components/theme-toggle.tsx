@@ -43,7 +43,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycle}
-      className="flex h-7 items-center justify-center px-2 text-muted-foreground transition-colors hover:text-foreground"
+      className="flex h-7 items-center justify-center px-2 text-foreground/75 transition-colors hover:text-foreground"
       title={labelMap[current]}
     >
       <Icon className="size-3.5" />

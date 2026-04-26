@@ -49,13 +49,13 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
 
   const handleUploadLogo = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
-    if (file.size > 4 * 1024 * 1024) { toast.error("主站图片不能超过 4MB"); return; }
+    if (file.size > 4 * 1024 * 1024) { toast.error("主站图标不能超过 4MB"); return; }
     setUploadingLogo(true);
     try {
       const result = await uploadSiteLogoAction(await readFileAsDataUrl(file));
       if (!result.success) { toast.error(result.error); return; }
       setForm((p) => ({ ...p, site_logo_url: result.data }));
-      toast.success("主站图片已上传，记得保存配置");
+      toast.success("主站图标已上传，记得保存配置");
     } finally {
       setUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -65,14 +65,14 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
   const handleSave = useCallback(async () => {
     if (!form.site_name.trim()) { toast.error("站点名称不能为空"); return; }
     if (!form.site_description.trim()) { toast.error("站点描述不能为空"); return; }
-    for (const [value, label] of [[form.background_image_url, "背景图片"], [form.site_logo_url, "主站图片"]] as const) {
+    for (const [value, label] of [[form.background_image_url, "背景图片"], [form.site_logo_url, "主站图标"]] as const) {
       const imageUrl = value.trim();
-      if (imageUrl) {
+      if (imageUrl && !imageUrl.startsWith("/api/icons/")) {
         try {
           const url = new URL(imageUrl);
           if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("invalid protocol");
         } catch {
-          toast.error(`${label}地址格式无效，仅支持 http/https`);
+          toast.error(`${label}地址格式无效`);
           return;
         }
       }
@@ -120,7 +120,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
             <p className="text-[11px] text-muted-foreground">支持 HTML，留空则不显示</p>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="cfg_logo">主站图片</Label>
+            <Label htmlFor="cfg_logo">主站图标</Label>
             <input
               ref={logoInputRef}
               type="file"
@@ -151,8 +151,8 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
             <p className="text-[11px] text-muted-foreground">显示在首页标题左侧，支持 URL 或本地上传</p>
             {form.site_logo_url && (
               <div className="flex items-center gap-3 rounded-lg border bg-muted/20 p-3">
-                <img src={form.site_logo_url} alt="主站图片预览" className="size-12 rounded-lg object-contain" />
-                <span className="text-xs text-muted-foreground">主站图片预览</span>
+                <img src={form.site_logo_url} alt="主站图标预览" className="size-12 rounded-lg object-contain" />
+                <span className="text-xs text-muted-foreground">主站图标预览</span>
               </div>
             )}
           </div>
@@ -195,13 +195,13 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
           <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
             <div className="grid gap-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="cfg_icon_opacity">主页站点图标透明度</Label>
+                <Label htmlFor="cfg_icon_opacity">站点卡片图标透明度</Label>
                 <span className="text-xs text-muted-foreground">{form.icon_opacity}%</span>
               </div>
               <Input
                 id="cfg_icon_opacity"
                 type="range"
-                min="0"
+                min="10"
                 max="100"
                 value={form.icon_opacity}
                 onChange={(e) => setForm((p) => ({ ...p, icon_opacity: e.target.value }))}

@@ -11,7 +11,7 @@ export default async function Page() {
   const backgroundBlur = Math.min(24, Math.max(0, Number(config.background_blur) || 0));
   const backgroundOverlay = Math.min(100, Math.max(0, Number(config.background_overlay) || 0));
   const iconOpacityValue = Number(config.icon_opacity);
-  const iconOpacity = Math.min(100, Math.max(0, Number.isFinite(iconOpacityValue) ? iconOpacityValue : 100));
+  const iconOpacity = Math.min(100, Math.max(10, Number.isFinite(iconOpacityValue) ? iconOpacityValue : 100));
   const siteLogo = config.site_logo_url.trim();
   const lightOpacity = backgroundOverlay / 100;
   const darkOpacity = Math.min(0.95, (backgroundOverlay + 5) / 100);
@@ -45,8 +45,8 @@ export default async function Page() {
           ) : (
             <Terminal className="size-5" />
           )}
-          <span className="flex-1 text-sm font-semibold tracking-tight">{config.site_name}</span>
-          <a href="https://github.com/coldboy404/HomeDirPlus" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+          <span className="flex-1 text-sm font-semibold tracking-tight text-foreground/90 drop-shadow-sm">{config.site_name}</span>
+          <a href="https://github.com/coldboy404/HomeDirPlus" target="_blank" rel="noopener noreferrer" className="text-foreground/75 drop-shadow-sm transition-colors hover:text-foreground">
             <GithubIcon className="size-4" />
           </a>
         </header>
