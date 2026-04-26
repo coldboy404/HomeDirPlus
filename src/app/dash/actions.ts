@@ -363,9 +363,9 @@ export async function uploadSiteLogoAction(dataUrl: string): Promise<{ success: 
   return saveImageDataUrl(dataUrl, 4, "主站图标");
 }
 
-function clampPercent(value: string | undefined, fallback: string, min = 0): string {
+function clampPercent(value: string | undefined, fallback: string): string {
   const number = Number(value ?? fallback);
-  return String(Math.min(100, Math.max(min, Number.isFinite(number) ? Math.round(number) : Number(fallback))));
+  return String(Math.min(100, Math.max(0, Number.isFinite(number) ? Math.round(number) : Number(fallback))));
 }
 
 // 配置操作
@@ -382,8 +382,6 @@ export async function updateConfigAction(config: Partial<SiteConfig>): Promise<A
   const updates = {
     ...config,
     background_blur: clampPercent(config.background_blur, "1"),
-    background_overlay: clampPercent(config.background_overlay, "80"),
-    icon_opacity: clampPercent(config.icon_opacity, "100", 10),
   };
   try {
     updateConfig(updates);

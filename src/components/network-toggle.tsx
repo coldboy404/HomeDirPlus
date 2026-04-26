@@ -23,7 +23,7 @@ export function NetworkToggle({
     <Button
       variant="ghost"
       size="sm"
-      className="h-7 px-2 text-xs text-foreground/75 hover:text-foreground"
+      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
       onClick={toggle}
     >
       {isInternal ? <Server className="size-3.5" /> : <Globe className="size-3.5" />}

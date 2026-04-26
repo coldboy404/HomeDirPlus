@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { CategoryConfig, SiteData } from "@/lib/types";
-type SafeConfig = { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; background_overlay: string; site_logo_url: string; icon_opacity: string };
+type SafeConfig = { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string };
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminSites } from "@/components/admin/sites";
 import { AdminCategories } from "@/components/admin/categories";

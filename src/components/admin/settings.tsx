@@ -8,16 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUp, Loader2, Save, X } from "lucide-react";
 
-export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; background_overlay: string; site_logo_url: string; icon_opacity: string } }) {
+export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string } }) {
   const [form, setForm] = useState({
     site_name: config.site_name,
     site_description: config.site_description,
     footer_text: config.footer_text,
     background_image_url: config.background_image_url,
     background_blur: config.background_blur,
-    background_overlay: config.background_overlay,
     site_logo_url: config.site_logo_url,
-    icon_opacity: config.icon_opacity,
   });
   const [saving, setSaving] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
@@ -195,20 +193,6 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
           <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
             <div className="grid gap-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="cfg_icon_opacity">站点卡片图标透明度</Label>
-                <span className="text-xs text-muted-foreground">{form.icon_opacity}%</span>
-              </div>
-              <Input
-                id="cfg_icon_opacity"
-                type="range"
-                min="10"
-                max="100"
-                value={form.icon_opacity}
-                onChange={(e) => setForm((p) => ({ ...p, icon_opacity: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <div className="flex items-center justify-between">
                 <Label htmlFor="cfg_background_blur">背景模糊</Label>
                 <span className="text-xs text-muted-foreground">{form.background_blur}px</span>
               </div>
@@ -219,20 +203,6 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
                 max="24"
                 value={form.background_blur}
                 onChange={(e) => setForm((p) => ({ ...p, background_blur: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="cfg_background_overlay">背景遮罩</Label>
-                <span className="text-xs text-muted-foreground">{form.background_overlay}%</span>
-              </div>
-              <Input
-                id="cfg_background_overlay"
-                type="range"
-                min="0"
-                max="100"
-                value={form.background_overlay}
-                onChange={(e) => setForm((p) => ({ ...p, background_overlay: e.target.value }))}
               />
             </div>
           </div>

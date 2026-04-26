@@ -28,9 +28,7 @@ export default async function AdminPage() {
     footer_text: config.footer_text,
     background_image_url: config.background_image_url,
     background_blur: config.background_blur,
-    background_overlay: config.background_overlay,
     site_logo_url: config.site_logo_url,
-    icon_opacity: config.icon_opacity,
   };
 
   return (
