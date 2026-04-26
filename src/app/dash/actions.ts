@@ -314,6 +314,15 @@ export async function updateConfigAction(config: Partial<SiteConfig>): Promise<A
   if (authErr) return authErr;
   if (config.site_name !== undefined && !config.site_name.trim()) return { success: false, error: "站点名称不能为空" };
   if (config.site_description !== undefined && !config.site_description.trim()) return { success: false, error: "站点描述不能为空" };
+  const backgroundImage = config.background_image_url?.trim();
+  if (backgroundImage) {
+    try {
+      const url = new URL(backgroundImage);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return { success: false, error: "背景图片地址仅支持 http/https" };
+    } catch {
+      return { success: false, error: "背景图片地址格式无效" };
+    }
+  }
   try {
     updateConfig(config);
     revalidatePath("/");

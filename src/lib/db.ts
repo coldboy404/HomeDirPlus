@@ -124,6 +124,7 @@ export interface SiteConfig {
   site_name: string;
   site_description: string;
   footer_text: string;
+  background_image_url: string;
   admin_password: string;
   admin_session: string;
 }
@@ -132,6 +133,7 @@ const defaultConfig: SiteConfig = {
   site_name: "HomeDirPlus",
   site_description: "快速访问内外网服务的导航中心",
   footer_text: "© 2026 coldboy404 · Powered by <a href=\"https://github.com/coldboy404/HomeDirPlus\">HomeDirPlus</a>",
+  background_image_url: "",
   admin_password: "",
   admin_session: "",
 };
@@ -144,6 +146,7 @@ export function getConfig(): SiteConfig {
     site_name: map.get("site_name") || defaultConfig.site_name,
     site_description: map.get("site_description") || defaultConfig.site_description,
     footer_text: map.get("footer_text") || defaultConfig.footer_text,
+    background_image_url: map.get("background_image_url") || defaultConfig.background_image_url,
     admin_password: map.get("admin_password") || "",
     admin_session: map.get("admin_session") || "",
   };

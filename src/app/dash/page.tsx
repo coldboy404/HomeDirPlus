@@ -26,6 +26,7 @@ export default async function AdminPage() {
     site_name: config.site_name,
     site_description: config.site_description,
     footer_text: config.footer_text,
+    background_image_url: config.background_image_url,
   };
 
   return (
