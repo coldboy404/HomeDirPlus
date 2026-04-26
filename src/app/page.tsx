@@ -1,4 +1,4 @@
-import { Terminal } from "lucide-react";
+import { Settings, Terminal } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github";
 import { getSites } from "@/lib/sites";
 import { HomePage } from "@/components/home-page";
@@ -14,7 +14,10 @@ export default async function Page() {
       <header className="mb-8 flex items-center gap-2.5">
         <Terminal className="size-5" />
         <span className="flex-1 text-sm font-semibold tracking-tight">{config.site_name}</span>
-        <a href="https://github.com/52Lxcloud/HomeDir" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+        <a href="/dash" aria-label="进入后台设置" title="设置" className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+          <Settings className="size-4" />
+        </a>
+        <a href="https://github.com/coldboy404/HomeDirPlus" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
           <GithubIcon className="size-4" />
         </a>
       </header>

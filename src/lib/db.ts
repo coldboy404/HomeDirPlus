@@ -120,9 +120,9 @@ export interface SiteConfig {
 }
 
 const defaultConfig: SiteConfig = {
-  site_name: "HomeDir",
+  site_name: "HomeDirPlus",
   site_description: "快速访问内外网服务的导航中心",
-  footer_text: "© 2026 Lxcloud · Powered by <a href=\"https://github.com/52Lxcloud/HomeDir\">HomeDir</a>",
+  footer_text: "© 2026 coldboy404 · Powered by <a href=\"https://github.com/coldboy404/HomeDirPlus\">HomeDirPlus</a>",
   admin_password: "",
   admin_session: "",
 };

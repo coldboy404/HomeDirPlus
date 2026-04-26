@@ -7,7 +7,7 @@ export function AdminAbout() {
     <div className="space-y-4">
       <div className="rounded-lg border bg-card p-6 text-center">
         <Terminal className="mx-auto mb-4 size-8" />
-        <div className="mb-1 text-2xl font-bold">HomeDir</div>
+        <div className="mb-1 text-2xl font-bold">HomeDirPlus</div>
         <div className="text-sm text-muted-foreground">v{version}</div>
         <div className="mt-3 text-xs text-muted-foreground">
           自托管导航面板，快速访问内外网服务
@@ -37,10 +37,10 @@ export function AdminAbout() {
           <span className="text-muted-foreground">Telegram</span>
           <span className="ml-auto text-xs text-muted-foreground/60">@Lx_hub</span>
         </a>
-        <a href="https://github.com/52Lxcloud" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 border-t px-4 py-2.5 text-sm transition-colors hover:bg-muted/50">
+        <a href="https://github.com/coldboy404" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 border-t px-4 py-2.5 text-sm transition-colors hover:bg-muted/50">
           <GithubIcon className="size-3.5 text-muted-foreground" />
           <span className="text-muted-foreground">GitHub</span>
-          <span className="ml-auto text-xs text-muted-foreground/60">@52Lxcloud</span>
+          <span className="ml-auto text-xs text-muted-foreground/60">@coldboy404</span>
         </a>
       </div>
     </div>

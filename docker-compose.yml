@@ -1,7 +1,7 @@
 services:
-  homedir:
-    image: 52lxcloud/homedir:latest
-    container_name: homedir
+  homedirplus:
+    image: coldboy404/homedirplus:latest
+    container_name: homedirplus
     restart: unless-stopped
     ports:
       - "4027:4027"

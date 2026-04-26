@@ -2,7 +2,7 @@
 
 ![preview](preview.png)
 
-# HomeDir
+# HomeDirPlus
 
 ---
 
@@ -59,9 +59,9 @@ src/
 ```yaml
 # docker-compose.yml
 services:
-  homedir:
-    image: 52lxcloud/homedir:latest
-    container_name: homedir
+  homedirplus:
+    image: coldboy404/homedirplus:latest
+    container_name: homedirplus
     restart: unless-stopped
     ports:
       - "4027:4027"
@@ -86,4 +86,4 @@ pnpm dev
 
 ---
 
-如果觉得这个项目对你有帮助，欢迎点个 ⭐ 支持一下。
+如果觉得这个项目对你有帮助，欢迎点个 ⭐ 支持一下：<https://github.com/coldboy404/HomeDirPlus>。

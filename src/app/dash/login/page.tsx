@@ -26,7 +26,7 @@ export default async function LoginPage() {
           </div>
         </div>
         <LoginForm needSetup={needSetup} />
-        <p className="mt-6 text-center text-[10px] text-muted-foreground/40">HomeDir</p>
+        <p className="mt-6 text-center text-[10px] text-muted-foreground/40">HomeDirPlus</p>
       </div>
     </div>
   );
