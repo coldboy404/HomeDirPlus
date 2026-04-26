@@ -238,7 +238,7 @@ export function HomePage({
           </span>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {filtered.map((site) => {
             const Icon = getIcon(site.icon);
             const url = (isInternal ? site.url.internal : site.url.external) || site.url.internal || site.url.external;
@@ -248,18 +248,18 @@ export function HomePage({
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex items-center gap-2.5 rounded-xl border bg-card p-3 shadow-sm transition-all hover:border-foreground/15 hover:bg-accent/50 hover:shadow-md sm:gap-3.5 sm:p-4"
+                className="group flex items-center gap-2 rounded-xl border bg-muted/40 px-2.5 py-2 shadow-sm backdrop-blur-md transition-all hover:border-foreground/15 hover:bg-accent/50 hover:shadow-md"
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted transition-colors sm:size-10 sm:rounded-xl">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background/35 backdrop-blur transition-colors">
                   {(site.icon_custom_url || site.icon_url) ? (
-                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" />
+                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain" />
                   ) : (
-                    <Icon className="size-3.5 sm:size-4" />
+                    <Icon className="size-3.5" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="truncate text-xs font-medium sm:text-sm">{site.name}</span>
-                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-xs">{site.desc}</p>
+                  <span className="block truncate text-xs font-medium">{site.name}</span>
+                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{site.desc}</p>
                 </div>
               </a>
             );
