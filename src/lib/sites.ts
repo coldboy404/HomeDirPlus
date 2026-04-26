@@ -13,6 +13,7 @@ export function getSites(): { sites: SiteData[]; categories: string[]; config: S
     desc: r.desc,
     icon: r.icon,
     icon_url: r.icon_url,
+    icon_custom_url: r.icon_custom_url,
     category: r.category,
     url: { internal: r.url_internal, external: r.url_external },
     sort_order: r.sort_order,

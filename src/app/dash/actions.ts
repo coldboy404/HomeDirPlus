@@ -12,8 +12,12 @@ import {
   createShortcut,
   deleteShortcut,
   getAllShortcuts,
+  getAllSites,
+  importSites,
+  reorderSites,
 } from "@/lib/db";
 import type { SiteConfig } from "@/lib/db";
+import { createExportJson, parseImportJson } from "@/lib/import-export";
 import { saveIcon } from "@/lib/icons-fs";
 
 interface SiteFormInput {
@@ -21,6 +25,7 @@ interface SiteFormInput {
   desc: string;
   icon: string;
   icon_url?: string;
+  icon_custom_url?: string;
   category: string;
   url_internal: string;
   url_external: string;
@@ -28,16 +33,34 @@ interface SiteFormInput {
 }
 
 type ActionResult = { success: true } | { success: false; error: string };
+type ImportMode = "append" | "replace";
+
+type ImportResult =
+  | { success: true; count: number; format: "homedirplus" | "sunpanel" }
+  | { success: false; error: string };
+
+type ExportResult = { success: true; data: string } | { success: false; error: string };
+
+type ReorderInput = { id: string; category: string; sort_order: number };
 
 function validate(data: SiteFormInput): string | null {
   if (!data.name || data.name.trim().length === 0) return "名称不能为空";
   if (data.name.length > 100) return "名称不能超过 100 个字符";
   if (!data.category || data.category.trim().length === 0) return "分类不能为空";
   if (!data.url_internal && !data.url_external) return "至少填写一个地址";
+  const customIcon = data.icon_custom_url?.trim();
+  if (customIcon) {
+    try {
+      const url = new URL(customIcon);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return "自定义图标地址仅支持 http/https";
+    } catch {
+      return "自定义图标地址格式无效";
+    }
+  }
   return null;
 }
 
-async function requireAuth(): Promise<ActionResult | null> {
+async function requireAuth(): Promise<{ success: false; error: string } | null> {
   if (!(await isAuthenticated())) return { success: false, error: "未登录" };
   return null;
 }
@@ -93,6 +116,69 @@ export async function deleteSiteAction(id: string): Promise<ActionResult> {
   } catch (e) {
     console.error("删除站点失败:", e);
     return { success: false, error: "删除站点失败" };
+  }
+}
+
+export async function reorderSitesAction(items: ReorderInput[]): Promise<ActionResult> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  if (!Array.isArray(items) || items.length === 0) return { success: false, error: "排序数据不能为空" };
+  if (items.some((item) => !item.id || !item.category)) return { success: false, error: "排序数据无效" };
+
+  try {
+    reorderSites(items.map((item) => ({
+      id: item.id,
+      category: item.category.trim(),
+      sort_order: Number.isFinite(item.sort_order) ? item.sort_order : 0,
+    })));
+    revalidatePath("/");
+    revalidatePath("/dash");
+    return { success: true };
+  } catch (e) {
+    console.error("保存排序失败:", e);
+    return { success: false, error: "保存排序失败" };
+  }
+}
+
+export async function importSitesAction(jsonText: string, mode: ImportMode): Promise<ImportResult> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+  if (!jsonText.trim()) return { success: false, error: "请选择 JSON 文件" };
+  if (mode !== "append" && mode !== "replace") return { success: false, error: "导入模式无效" };
+
+  try {
+    const parsed = parseImportJson(jsonText);
+    const count = importSites(parsed.sites.map((site) => ({ ...site, icon: site.icon || "Globe" })), mode);
+    revalidatePath("/");
+    revalidatePath("/dash");
+    return { success: true, count, format: parsed.format };
+  } catch (e) {
+    console.error("导入站点失败:", e);
+    return { success: false, error: e instanceof Error ? e.message : "导入站点失败" };
+  }
+}
+
+export async function exportSitesAction(): Promise<ExportResult> {
+  const authErr = await requireAuth();
+  if (authErr) return authErr;
+
+  try {
+    const rows = getAllSites().map((r) => ({
+      id: r.id,
+      name: r.name,
+      desc: r.desc,
+      icon: r.icon,
+      icon_url: r.icon_url,
+      icon_custom_url: r.icon_custom_url,
+      category: r.category,
+      url: { internal: r.url_internal, external: r.url_external },
+      sort_order: r.sort_order,
+      created_at: r.created_at,
+    }));
+    return { success: true, data: JSON.stringify(createExportJson(rows), null, 2) };
+  } catch (e) {
+    console.error("导出站点失败:", e);
+    return { success: false, error: "导出站点失败" };
   }
 }
 

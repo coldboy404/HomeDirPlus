@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import type { SiteData } from "@/lib/types";
-import { getIcon, getIconUrl } from "@/lib/icons";
+import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import {
   renameCategoryAction,
   deleteCategoryAction,
@@ -96,8 +96,8 @@ export function AdminCategories({ sites }: { sites: SiteData[] }) {
                     const Icon = getIcon(site.icon);
                     return (
                       <div key={site.id} className="flex items-center gap-2">
-                        {site.icon_url ? (
-                          <img src={getIconUrl(site.icon_url)} alt="" className="size-4 shrink-0 rounded object-contain" />
+                        {(site.icon_custom_url || site.icon_url) ? (
+                          <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-4 shrink-0 rounded object-contain" />
                         ) : (
                           <Icon className="size-3.5 text-muted-foreground/60" />
                         )}

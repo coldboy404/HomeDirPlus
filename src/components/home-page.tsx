@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { SiteData, ShortcutConfig } from "@/lib/types";
-import { getIcon, getIconUrl } from "@/lib/icons";
+import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import { SearchDialog } from "@/components/search-dialog";
 import { ShortcutHints } from "@/components/shortcut-hints";
 import { NetworkToggle } from "@/components/network-toggle";
@@ -241,8 +241,8 @@ export function HomePage({
                 className="group flex items-center gap-2.5 rounded-xl border bg-card p-3 shadow-sm transition-all hover:border-foreground/15 hover:bg-accent/50 hover:shadow-md sm:gap-3.5 sm:p-4"
               >
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted transition-colors sm:size-10 sm:rounded-xl">
-                  {site.icon_url ? (
-                    <img src={getIconUrl(site.icon_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" />
+                  {(site.icon_custom_url || site.icon_url) ? (
+                    <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain sm:size-6" />
                   ) : (
                     <Icon className="size-3.5 sm:size-4" />
                   )}

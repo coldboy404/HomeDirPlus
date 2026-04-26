@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from "react";
-import { getIcon, getIconUrl } from "@/lib/icons";
+import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import type { SiteData } from "@/lib/types";
 import { Search } from "lucide-react";
 import {
@@ -80,8 +80,8 @@ export function SearchDialog({
                   className="gap-3"
                 >
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted/80">
-                    {site.icon_url ? (
-                      <img src={getIconUrl(site.icon_url)} alt="" className="size-5 rounded-md object-contain" />
+                    {(site.icon_custom_url || site.icon_url) ? (
+                      <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain" />
                     ) : (
                       <Icon className="size-4 text-muted-foreground" />
                     )}

@@ -8,6 +8,7 @@ interface SiteRow {
   desc: string;
   icon: string; // lucide icon name, e.g. "HardDrive"
   icon_url: string; // favicon filename in data/icons/
+  icon_custom_url: string; // custom external icon URL
   category: string;
   url_internal: string;
   url_external: string;
@@ -22,6 +23,7 @@ interface SiteInput {
   desc: string;
   icon: string;
   icon_url?: string;
+  icon_custom_url?: string;
   category: string;
   url_internal: string;
   url_external: string;
@@ -52,6 +54,7 @@ function getDb() {
       name TEXT NOT NULL,
       desc TEXT NOT NULL DEFAULT '',
       icon TEXT NOT NULL DEFAULT 'Globe',
+      icon_custom_url TEXT NOT NULL DEFAULT '',
       category TEXT NOT NULL DEFAULT '未分类',
       url_internal TEXT NOT NULL DEFAULT '',
       url_external TEXT NOT NULL DEFAULT '',
@@ -61,6 +64,12 @@ function getDb() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+
+  // 兼容旧数据库：补齐新增字段
+  const siteColumns = _db.prepare("PRAGMA table_info(sites)").all() as { name: string }[];
+  if (!siteColumns.some((col) => col.name === "icon_custom_url")) {
+    _db.exec("ALTER TABLE sites ADD COLUMN icon_custom_url TEXT NOT NULL DEFAULT ''");
+  }
 
   // 配置表
   _db.exec(`
@@ -161,6 +170,49 @@ export function getAllSites(): SiteRow[] {
   return rows;
 }
 
+export function reorderSites(items: { id: string; category: string; sort_order: number }[]): void {
+  const db = getDb();
+  const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
+  const stmt = db.prepare("UPDATE sites SET category = ?, sort_order = ?, updated_at = ? WHERE id = ?");
+  const run = db.transaction((rows: { id: string; category: string; sort_order: number }[]) => {
+    for (const row of rows) stmt.run(row.category, row.sort_order, now, row.id);
+  });
+  run(items);
+}
+
+export function importSites(inputs: SiteInput[], mode: "append" | "replace" = "append"): number {
+  const db = getDb();
+  const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
+  const insert = db.prepare(`
+    INSERT INTO sites (id, name, desc, icon, icon_url, icon_custom_url, category, url_internal, url_external, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  const run = db.transaction((rows: SiteInput[]) => {
+    if (mode === "replace") {
+      db.prepare("DELETE FROM shortcuts").run();
+      db.prepare("DELETE FROM sites").run();
+    }
+    for (const input of rows) {
+      insert.run(
+        input.id || genId(),
+        input.name,
+        input.desc,
+        input.icon || 'Globe',
+        input.icon_url || '',
+        input.icon_custom_url || '',
+        input.category,
+        input.url_internal,
+        input.url_external,
+        input.sort_order ?? 0,
+        now,
+        now
+      );
+    }
+  });
+  run(inputs);
+  return inputs.length;
+}
+
 
 export function createSite(input: SiteInput): SiteRow {
   const db = getDb();
@@ -168,14 +220,15 @@ export function createSite(input: SiteInput): SiteRow {
   const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
 
   db.prepare(`
-    INSERT INTO sites (id, name, desc, icon, icon_url, category, url_internal, url_external, sort_order, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sites (id, name, desc, icon, icon_url, icon_custom_url, category, url_internal, url_external, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.name,
     input.desc,
     input.icon,
     input.icon_url || '',
+    input.icon_custom_url || '',
     input.category,
     input.url_internal,
     input.url_external,
@@ -199,7 +252,7 @@ export function updateSite(id: string, input: Partial<SiteInput>): SiteRow | nul
   const now = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Shanghai' }).replace(' ', 'T');
   db.prepare(`
     UPDATE sites SET
-      name = ?, desc = ?, icon = ?, icon_url = ?, category = ?,
+      name = ?, desc = ?, icon = ?, icon_url = ?, icon_custom_url = ?, category = ?,
       url_internal = ?, url_external = ?,
       sort_order = ?, updated_at = ?
     WHERE id = ?
@@ -208,6 +261,7 @@ export function updateSite(id: string, input: Partial<SiteInput>): SiteRow | nul
     input.desc ?? existing.desc,
     input.icon ?? existing.icon,
     input.icon_url ?? existing.icon_url,
+    input.icon_custom_url ?? existing.icon_custom_url,
     input.category ?? existing.category,
     input.url_internal ?? existing.url_internal,
     input.url_external ?? existing.url_external,

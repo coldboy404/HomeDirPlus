@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { SiteData } from "@/lib/types";
-import { getIcon, getIconUrl } from "@/lib/icons";
+import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { LayoutGrid, Layers } from "lucide-react";
 
@@ -53,8 +53,8 @@ export function AdminOverview({
               className="flex items-center gap-3 rounded-lg border bg-card p-3"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/80">
-                {site.icon_url ? (
-                  <img src={getIconUrl(site.icon_url)} alt="" className="size-5 rounded-md object-contain" />
+                {(site.icon_custom_url || site.icon_url) ? (
+                  <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-5 rounded-md object-contain" />
                 ) : (
                   <Icon className="size-4 text-muted-foreground" />
                 )}

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback } from "react";
 import type { SiteData } from "@/lib/types";
-import { getIcon, getIconUrl, commonIcons } from "@/lib/icons";
+import { getIcon, getSiteIconUrl, commonIcons } from "@/lib/icons";
 import {
   createSiteAction,
   updateSiteAction,
   deleteSiteAction,
+  exportSitesAction,
   fetchFaviconAction,
+  importSitesAction,
+  reorderSitesAction,
 } from "@/app/dash/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,13 +31,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Save, AlertTriangle, ChevronRight, ImageDown, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Download, GripVertical, ImageDown, Loader2, Pencil, Plus, Save, Trash2, Upload, X } from "lucide-react";
 
 interface SiteFormData {
   name: string;
   desc: string;
   icon: string;
   icon_url: string;
+  icon_custom_url: string;
   category: string;
   url_internal: string;
   url_external: string;
@@ -46,11 +50,21 @@ const emptyForm: SiteFormData = {
   desc: "",
   icon: "Globe",
   icon_url: "",
+  icon_custom_url: "",
   category: "",
   url_internal: "",
   url_external: "",
   sort_order: 0,
 };
+
+type DragState = { id: string; category: string } | null;
+
+function groupSites(sites: SiteData[]) {
+  return sites.reduce<Record<string, SiteData[]>>((acc, site) => {
+    (acc[site.category] ??= []).push(site);
+    return acc;
+  }, {});
+}
 
 export function AdminSites({
   sites,
@@ -68,6 +82,17 @@ export function AdminSites({
   const [deleting, setDeleting] = useState(false);
   const [fetchingIcon, setFetchingIcon] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [orderedSites, setOrderedSites] = useState<SiteData[]>(sites);
+  const [dragging, setDragging] = useState<DragState>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const groupedSites = useMemo(() => groupSites(orderedSites), [orderedSites]);
+
+  if (orderedSites !== sites && orderedSites.length !== sites.length) {
+    setOrderedSites(sites);
+  }
 
   const toggleGroup = (cat: string) => {
     setCollapsed((prev) => {
@@ -90,6 +115,7 @@ export function AdminSites({
       desc: site.desc,
       icon: site.icon,
       icon_url: site.icon_url,
+      icon_custom_url: site.icon_custom_url || "",
       category: site.category,
       url_internal: site.url.internal,
       url_external: site.url.external,
@@ -106,6 +132,7 @@ export function AdminSites({
         desc: form.desc,
         icon: form.icon,
         icon_url: form.icon_url,
+        icon_custom_url: form.icon_custom_url,
         category: form.category,
         url_internal: form.url_internal,
         url_external: form.url_external,
@@ -154,30 +181,115 @@ export function AdminSites({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const deletingSiteName = sites.find((s) => s.id === deletingId)?.name;
+  const deletingSiteName = orderedSites.find((s) => s.id === deletingId)?.name;
+
+  const persistOrder = useCallback(async (nextSites: SiteData[]) => {
+    setSavingOrder(true);
+    try {
+      const payload = Object.values(groupSites(nextSites)).flatMap((group) =>
+        group.map((site, index) => ({ id: site.id, category: site.category, sort_order: index + 1 }))
+      );
+      const result = await reorderSitesAction(payload);
+      if (!result.success) {
+        toast.error(result.error);
+        setOrderedSites(sites);
+        return;
+      }
+      toast.success("排序已保存");
+    } finally {
+      setSavingOrder(false);
+    }
+  }, [sites]);
+
+  const moveSite = useCallback((fromId: string, toId: string, targetCategory: string) => {
+    if (fromId === toId) return;
+    setOrderedSites((prev) => {
+      const moving = prev.find((site) => site.id === fromId);
+      const target = prev.find((site) => site.id === toId);
+      if (!moving || !target) return prev;
+      const next = prev.filter((site) => site.id !== fromId);
+      const targetIndex = next.findIndex((site) => site.id === toId);
+      const moved = { ...moving, category: targetCategory };
+      next.splice(targetIndex, 0, moved);
+      void persistOrder(next);
+      return next;
+    });
+  }, [persistOrder]);
+
+  const importFile = useCallback(async (file: File, mode: "append" | "replace") => {
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const result = await importSitesAction(text, mode);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`已导入 ${result.count} 个站点（${result.format === "sunpanel" ? "SunPanel" : "HomeDirPlus"}）`);
+      window.location.reload();
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, []);
+
+  const handleExport = useCallback(async () => {
+    const result = await exportSitesAction();
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    const blob = new Blob([result.data], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `HomeDirPlus-Data-${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success("导出完成");
+  }, []);
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{sites.length} 个站点</p>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="size-4" />
-          添加站点
-        </Button>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{orderedSites.length} 个站点{savingOrder ? " · 正在保存排序…" : ""}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json,.sun-panel"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const replace = window.confirm("是否清空当前站点后导入？\n\n确定：清空后导入\n取消：追加导入");
+              void importFile(file, replace ? "replace" : "append");
+            }}
+          />
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={importing}>
+            <Download className="size-4" />
+            导出 JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+            导入 JSON
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="size-4" />
+            添加站点
+          </Button>
+        </div>
       </div>
 
-      {sites.length === 0 ? (
+      {orderedSites.length === 0 ? (
         <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
           暂无站点，点击上方按钮添加
         </div>
       ) : (
         <div className="space-y-3">
-          {Object.entries(
-            sites.reduce<Record<string, SiteData[]>>((acc, s) => {
-              (acc[s.category] ??= []).push(s);
-              return acc;
-            }, {})
-          ).map(([category, group]) => {
+          {Object.entries(groupedSites).map(([category, group]) => {
             const isOpen = !collapsed.has(category);
             return (
               <div key={category} className="overflow-hidden rounded-lg border">
@@ -197,12 +309,21 @@ export function AdminSites({
                       return (
                         <div
                           key={site.id}
-                          className={`group flex items-center gap-3 px-3.5 py-2 transition-colors hover:bg-accent/20 ${
+                          draggable
+                          onDragStart={() => setDragging({ id: site.id, category })}
+                          onDragEnd={() => setDragging(null)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (dragging) moveSite(dragging.id, site.id, category);
+                          }}
+                          className={`group flex cursor-grab items-center gap-3 px-3.5 py-2 transition-colors hover:bg-accent/20 active:cursor-grabbing ${
                             i !== group.length - 1 ? "border-b" : ""
                           }`}
                         >
-                          {site.icon_url ? (
-                            <img src={getIconUrl(site.icon_url)} alt="" className="size-4 shrink-0 rounded object-contain" />
+                          <GripVertical className="size-3.5 shrink-0 text-muted-foreground/35" />
+                          {(site.icon_custom_url || site.icon_url) ? (
+                            <img src={getSiteIconUrl(site.icon_url, site.icon_custom_url)} alt="" className="size-4 shrink-0 rounded object-contain" />
                           ) : (
                             <Icon className="size-3.5 shrink-0 text-muted-foreground/60" />
                           )}
@@ -244,14 +365,14 @@ export function AdminSites({
           <div className="space-y-4 py-2">
             {/* 名称 + 图标 */}
             <div className="flex items-center gap-2">
-              {form.icon_url ? (
+              {(form.icon_custom_url || form.icon_url) ? (
                 <button
                   type="button"
-                  onClick={() => updateField("icon_url", "")}
+                  onClick={() => { updateField("icon_url", ""); updateField("icon_custom_url", ""); }}
                   className="group relative size-8 shrink-0 overflow-hidden rounded-lg border"
-                  title="点击移除自定义图标"
+                  title="点击移除当前图标"
                 >
-                  <img src={getIconUrl(form.icon_url)} alt="" className="size-full object-contain p-1" />
+                  <img src={getSiteIconUrl(form.icon_url, form.icon_custom_url)} alt="" className="size-full object-contain p-1" />
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <X className="size-3 text-white" />
                   </div>
@@ -281,6 +402,35 @@ export function AdminSites({
                 placeholder="站点名称"
                 className="h-8 flex-1"
               />
+            </div>
+
+            {/* 自定义图标地址 */}
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-[11px] font-medium text-muted-foreground">自定义图标 <span className="text-muted-foreground/40">图片地址优先显示</span></div>
+                {form.icon_custom_url && (
+                  <button
+                    type="button"
+                    onClick={() => updateField("icon_custom_url", "")}
+                    className="rounded-md px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-6 text-center text-[10px] text-muted-foreground">图</span>
+                <Input
+                  value={form.icon_custom_url}
+                  onChange={(e) => {
+                    updateField("icon_custom_url", e.target.value);
+                    if (e.target.value.trim()) updateField("icon_url", "");
+                  }}
+                  placeholder="https://example.com/icon.png"
+                  className="h-7 flex-1 text-xs"
+                />
+              </div>
+              <p className="mt-1.5 pl-8 text-[10px] text-muted-foreground/50">支持 http/https 图片地址；留空时使用获取图标或 Lucide 图标。</p>
             </div>
 
             {/* 分类 */}
@@ -352,6 +502,7 @@ export function AdminSites({
                       const result = await fetchFaviconAction(url);
                       if (result.success) {
                         updateField("icon_url", result.data);
+                        updateField("icon_custom_url", "");
                         toast.success("图标获取成功");
                       } else {
                         toast.error(result.error);

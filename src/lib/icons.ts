@@ -7,10 +7,17 @@ export function getIcon(name: string): LucideIcon {
   return icon || LucideIcons.Globe;
 }
 
-/** 获取图标的显示 URL */
+/** 获取本地缓存图标的显示 URL */
 export function getIconUrl(iconUrl: string): string {
   if (!iconUrl) return "";
   return `/api/icons/${iconUrl}`;
+}
+
+/** 自定义图片地址优先，其次使用本地缓存图标 */
+export function getSiteIconUrl(iconUrl?: string, iconCustomUrl?: string): string {
+  const custom = iconCustomUrl?.trim();
+  if (custom) return custom;
+  return getIconUrl(iconUrl || "");
 }
 
 // 常用图标列表，用于后台选择
