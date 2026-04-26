@@ -8,7 +8,7 @@ import { ShortcutHints } from "@/components/shortcut-hints";
 import { NetworkToggle } from "@/components/network-toggle";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import NumberFlow from "@number-flow/react";
 
@@ -207,6 +207,16 @@ export function HomePage({
           <NetworkToggle isInternal={isInternal} onToggle={handleToggle} />
           <div className="mx-0.5 h-4 w-px bg-border" />
           <ThemeToggle />
+          <div className="mx-0.5 h-4 w-px bg-border" />
+          <Link href="/dash" aria-label="进入后台设置" title="设置">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-muted-foreground hover:text-foreground"
+            >
+              <Settings className="size-3.5" />
+            </Button>
+          </Link>
         </div>
       </div>
 

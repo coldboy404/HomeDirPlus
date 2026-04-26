@@ -1,5 +1,6 @@
 import { Terminal, Send } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github";
+import { UpdateChecker } from "@/components/admin/update-checker";
 import { version } from "@/../package.json";
 
 export function AdminAbout() {
@@ -13,6 +14,7 @@ export function AdminAbout() {
           自托管导航面板，快速访问内外网服务
         </div>
       </div>
+      <UpdateChecker currentVersion={version} />
       <div className="rounded-lg border bg-card">
         {[
           { label: "框架", value: "Next.js + React" },
