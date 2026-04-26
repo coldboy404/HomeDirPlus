@@ -32,10 +32,10 @@ export function AdminAbout() {
       </div>
       <div className="rounded-lg border bg-card">
         <div className="px-4 py-2.5 text-sm font-medium">Contact</div>
-        <a href="https://t.me/Lx_hub" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 border-t px-4 py-2.5 text-sm transition-colors hover:bg-muted/50">
+        <a href="https://t.me/coldboy404" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 border-t px-4 py-2.5 text-sm transition-colors hover:bg-muted/50">
           <Send className="size-3.5 text-muted-foreground" />
           <span className="text-muted-foreground">Telegram</span>
-          <span className="ml-auto text-xs text-muted-foreground/60">@Lx_hub</span>
+          <span className="ml-auto text-xs text-muted-foreground/60">@coldboy404</span>
         </a>
         <a href="https://github.com/coldboy404" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 border-t px-4 py-2.5 text-sm transition-colors hover:bg-muted/50">
           <GithubIcon className="size-3.5 text-muted-foreground" />
