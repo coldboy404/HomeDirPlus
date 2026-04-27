@@ -5,6 +5,11 @@ import { hasPassword, setPassword, login, logout } from "@/lib/auth";
 
 type Result = { error?: string };
 
+function safeNext(value: FormDataEntryValue | null): string {
+  const next = typeof value === "string" ? value : "/";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
 export async function setupAction(_: Result, formData: FormData): Promise<Result> {
   const password = formData.get("password") as string;
   const confirm = formData.get("confirm") as string;
@@ -15,7 +20,7 @@ export async function setupAction(_: Result, formData: FormData): Promise<Result
 
   setPassword(password);
   await login(password);
-  redirect("/dash");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function loginAction(_: Result, formData: FormData): Promise<Result> {
@@ -24,7 +29,7 @@ export async function loginAction(_: Result, formData: FormData): Promise<Result
 
   const ok = await login(password);
   if (!ok) return { error: "密码错误" };
-  redirect("/dash");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function logoutAction(): Promise<void> {
