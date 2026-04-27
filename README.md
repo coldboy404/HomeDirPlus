@@ -59,7 +59,7 @@
 
 HomeDirPlus 基于上游 `52Lxcloud/HomeDir` 持续增强，当前额外包含：
 
-- **Docker 发布链路**：独立发布 `coldboy404/homedirplus`，版本 tag 发布精确版本；`latest` 与次版本别名仅由默认分支版本发布维护，避免旧 tag 重跑覆盖最新镜像。
+- **Docker 发布链路**：独立发布 `coldboy404/homedirplus`，版本 tag、`latest` 与次版本别名保持一致；仅保留必要 tag，避免面板误报更新。
 - **首页内联管理**：设置入口在首页弹窗中完成登录和管理，减少反代路径依赖。
 - **后台更新检查**：关于页可检查 GitHub Release / tag，方便确认是否有新版本。
 - **导入 / 导出**：支持 HomeDirPlus 与 SunPanel 数据导入，保留分类与排序信息。
