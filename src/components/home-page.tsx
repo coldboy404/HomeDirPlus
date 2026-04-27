@@ -205,8 +205,12 @@ export function HomePage({
           >
             <Search className="size-3.5" />
           </Button>
-          <div className="mx-0.5 h-4 w-px bg-border" />
-          <NetworkToggle isInternal={isInternal} onToggle={handleToggle} />
+          {!autoDetectNetwork && (
+            <>
+              <div className="mx-0.5 h-4 w-px bg-border" />
+              <NetworkToggle isInternal={isInternal} onToggle={handleToggle} />
+            </>
+          )}
           <div className="mx-0.5 h-4 w-px bg-border" />
           <ThemeToggle />
           <div className="mx-0.5 h-4 w-px bg-border" />
