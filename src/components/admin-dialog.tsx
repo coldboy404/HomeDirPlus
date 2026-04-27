@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { AdminPanel } from "@/components/admin-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,6 +96,10 @@ export function AdminDialog({ open, onOpenChange, onPayloadChange, authenticated
     },
     [loadPayload, password]
   );
+
+  useEffect(() => {
+    if (open && hasSession && !payload && !loading) void loadPayload();
+  }, [open, hasSession, payload, loading, loadPayload]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
