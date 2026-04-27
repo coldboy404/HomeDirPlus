@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import type { CategoryConfig, SiteData } from "@/lib/types";
-type SafeConfig = { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string; auto_detect_network: string };
+import type { AdminPayload } from "@/lib/admin-data";
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminSites } from "@/components/admin/sites";
 import { AdminCategories } from "@/components/admin/categories";
 import { AdminSettings } from "@/components/admin/settings";
 import { AdminShortcuts } from "@/components/admin/shortcuts";
-import type { ShortcutData } from "@/components/admin/shortcuts";
 import { AdminAbout } from "@/components/admin/about";
 import { BarChart3, LayoutGrid, Layers, Settings, Keyboard, Info } from "lucide-react";
 
@@ -30,13 +28,7 @@ export function AdminPanel({
   categoryConfigs,
   config,
   shortcuts,
-}: {
-  sites: SiteData[];
-  categories: string[];
-  categoryConfigs: CategoryConfig[];
-  config: SafeConfig;
-  shortcuts: ShortcutData[];
-}) {
+}: AdminPayload) {
   const [tab, setTabState] = useState<Tab>("overview");
   const [mounted, setMounted] = useState(false);
 

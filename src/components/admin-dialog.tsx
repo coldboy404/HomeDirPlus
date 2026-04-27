@@ -1,0 +1,139 @@
+"use client";
+
+import { FormEvent, useCallback, useState } from "react";
+import { AdminPanel } from "@/components/admin-panel";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Loader2, Settings, Terminal } from "lucide-react";
+import { toast } from "sonner";
+import type { AdminPayload } from "@/lib/admin-data";
+
+type AdminDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+type LoginResponse = { success: true } | { success: false; error?: string };
+
+export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
+  const [password, setPassword] = useState("");
+  const [payload, setPayload] = useState<AdminPayload | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const loadPayload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/payload", { cache: "no-store" });
+      if (res.status === 401) {
+        setPayload(null);
+        return false;
+      }
+      if (!res.ok) throw new Error("payload");
+      setPayload((await res.json()) as AdminPayload);
+      return true;
+    } catch {
+      toast.error("加载后台数据失败");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      onOpenChange(nextOpen);
+      if (nextOpen) void loadPayload();
+    },
+    [loadPayload, onOpenChange]
+  );
+
+  const handleLogin = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!password) {
+        toast.error("请输入密码");
+        return;
+      }
+
+      setLoggingIn(true);
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        const data = (await res.json().catch(() => ({}))) as LoginResponse;
+        if (!res.ok || !data.success) {
+          toast.error(data.success === false && data.error ? data.error : "登录失败");
+          return;
+        }
+        setPassword("");
+        toast.success("登录成功");
+        await loadPayload();
+      } catch {
+        toast.error("登录请求失败");
+      } finally {
+        setLoggingIn(false);
+      }
+    },
+    [loadPayload, password]
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Settings className="size-4" />
+            站点管理
+          </DialogTitle>
+          <DialogDescription>
+            在当前页面完成登录和配置，避免复杂反代链路影响 /dash 登录提交。
+          </DialogDescription>
+        </DialogHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            正在加载后台...
+          </div>
+        ) : payload ? (
+          <AdminPanel {...payload} />
+        ) : (
+          <form onSubmit={handleLogin} className="mx-auto w-full max-w-xs space-y-4 py-8">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <div className="flex size-12 items-center justify-center rounded-xl bg-foreground">
+                <Terminal className="size-6 text-background" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold">管理员登录</h3>
+                <p className="mt-1.5 text-xs text-muted-foreground">输入密码以打开后台</p>
+              </div>
+            </div>
+            <Input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              placeholder="输入密码"
+              autoFocus
+              required
+              className="h-9"
+            />
+            <Button type="submit" className="w-full bg-[oklch(0.65_0.10_155)] text-white hover:bg-[oklch(0.60_0.10_155)]" disabled={loggingIn}>
+              {loggingIn && <Loader2 className="mr-1.5 size-3 animate-spin" />}
+              登录
+            </Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -7,9 +7,9 @@ import { SearchDialog } from "@/components/search-dialog";
 import { ShortcutHints } from "@/components/shortcut-hints";
 import { NetworkToggle } from "@/components/network-toggle";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { Search, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AdminDialog } from "@/components/admin-dialog";
 import NumberFlow from "@number-flow/react";
 
 function getGreeting(hour: number) {
@@ -170,6 +170,7 @@ export function HomePage({
   const [isInternal, setIsInternal] = useState(false);
   const [manualOverride, setManualOverride] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   // 自动探测开启时检测内外网，手动切换后跳过
   useEffect(() => {
@@ -191,6 +192,7 @@ export function HomePage({
   return (
     <>
       <SearchDialog sites={sites} categories={categories} isInternal={isInternal} open={searchOpen} onOpenChange={setSearchOpen} />
+      <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} />
       <ShortcutHints sites={sites} isInternal={isInternal} onSearch={() => setSearchOpen(true)} shortcuts={shortcuts} />
 
       {/* 工具栏 */}
@@ -214,15 +216,16 @@ export function HomePage({
           <div className="mx-0.5 h-4 w-px bg-border" />
           <ThemeToggle />
           <div className="mx-0.5 h-4 w-px bg-border" />
-          <Link href="/dash" aria-label="进入后台设置" title="设置">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-foreground/75 hover:text-foreground"
-            >
-              <Settings className="size-3.5" />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-foreground/75 hover:text-foreground"
+            onClick={() => setAdminOpen(true)}
+            aria-label="进入后台设置"
+            title="设置"
+          >
+            <Settings className="size-3.5" />
+          </Button>
         </div>
       </div>
 
@@ -238,9 +241,9 @@ export function HomePage({
         <div className="flex items-center justify-center rounded-2xl border border-dashed py-24">
           <span className="text-sm text-muted-foreground">
             暂无站点 ·{" "}
-            <Link href="/dash" className="underline underline-offset-4 hover:text-foreground">
+            <button type="button" onClick={() => setAdminOpen(true)} className="underline underline-offset-4 hover:text-foreground">
               去后台添加
-            </Link>
+            </button>
           </span>
         </div>
       ) : (

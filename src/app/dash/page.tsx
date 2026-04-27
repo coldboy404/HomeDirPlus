@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getSites } from "@/lib/sites";
-import { getAllShortcuts } from "@/lib/db";
 import { AdminPanel } from "@/components/admin-panel";
 import { logoutAction } from "./login/actions";
 import { isAuthenticated, hasPassword } from "@/lib/auth";
+import { getAdminPayload } from "@/lib/admin-data";
 
 export const metadata: Metadata = {
   title: "管理",
@@ -18,19 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   if (!hasPassword() || !(await isAuthenticated())) redirect("/dash/login");
 
-  const { sites, categories, categoryConfigs, config } = getSites();
-  const shortcuts = getAllShortcuts().map((s) => ({ id: s.id, key: s.key, site_id: s.site_id }));
-
-  // 过滤敏感字段，只传展示用的配置给客户端
-  const safeConfig = {
-    site_name: config.site_name,
-    site_description: config.site_description,
-    footer_text: config.footer_text,
-    background_image_url: config.background_image_url,
-    background_blur: config.background_blur,
-    site_logo_url: config.site_logo_url,
-    auto_detect_network: config.auto_detect_network,
-  };
+  const payload = getAdminPayload();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -48,7 +35,7 @@ export default async function AdminPage() {
         </form>
       </div>
 
-      <AdminPanel sites={sites} categories={categories} categoryConfigs={categoryConfigs} config={safeConfig} shortcuts={shortcuts} />
+      <AdminPanel {...payload} />
     </div>
   );
 }
