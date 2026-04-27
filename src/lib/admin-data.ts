@@ -23,6 +23,10 @@ export type AdminPayload = {
   shortcuts: ShortcutData[];
 };
 
+export type AdminPanelProps = AdminPayload & {
+  onMutated?: () => void | Promise<void>;
+};
+
 export function toSafeConfig(config: SiteConfig): SafeConfig {
   return {
     site_name: config.site_name,

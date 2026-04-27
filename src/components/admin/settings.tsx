@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ImageUp, Loader2, Save, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
-export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string; auto_detect_network: string } }) {
+export function AdminSettings({ config, onMutated }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string; auto_detect_network: string }; onMutated?: () => void | Promise<void> }) {
   const [form, setForm] = useState({
     site_name: config.site_name,
     site_description: config.site_description,
@@ -25,13 +25,6 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
   const backgroundInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  const readFileAsDataUrl = useCallback((file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  }), []);
-
   const handleUploadBackground = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
     if (file.size > 8 * 1024 * 1024) { toast.error("背景图片不能超过 8MB"); return; }
@@ -45,7 +38,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
       setUploadingBackground(false);
       if (backgroundInputRef.current) backgroundInputRef.current.value = "";
     }
-  }, [readFileAsDataUrl]);
+  }, []);
 
   const handleUploadLogo = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }
@@ -60,7 +53,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
       setUploadingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
     }
-  }, [readFileAsDataUrl]);
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!form.site_name.trim()) { toast.error("站点名称不能为空"); return; }
@@ -82,8 +75,9 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
       const result = await apiPost("/api/admin/config", { body: { action: "update", config: form } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("配置已保存");
+      await onMutated?.();
     } finally { setSaving(false); }
-  }, [form]);
+  }, [form, onMutated]);
 
   return (
     <div className="space-y-6">

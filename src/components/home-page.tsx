@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { SiteData, ShortcutConfig } from "@/lib/types";
+import type { AdminPayload } from "@/lib/admin-data";
 import { getIcon, getSiteIconUrl } from "@/lib/icons";
 import { SearchDialog } from "@/components/search-dialog";
 import { ShortcutHints } from "@/components/shortcut-hints";
@@ -171,13 +172,28 @@ export function HomePage({
   const [manualOverride, setManualOverride] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [homeData, setHomeData] = useState<{ sites: SiteData[]; categories: string[]; shortcuts: ShortcutConfig[]; autoDetectNetwork: boolean }>({ sites, categories, shortcuts, autoDetectNetwork });
+
+  const syncHomeFromAdmin = useCallback((payload: AdminPayload) => {
+    setHomeData({
+      sites: payload.sites,
+      categories: payload.categories,
+      shortcuts: payload.shortcuts,
+      autoDetectNetwork: payload.config.auto_detect_network === "true",
+    });
+  }, []);
+
+  const currentSites = homeData.sites;
+  const currentCategories = homeData.categories;
+  const currentShortcuts = homeData.shortcuts;
+  const currentAutoDetectNetwork = homeData.autoDetectNetwork;
 
   // 自动探测开启时检测内外网，手动切换后跳过
   useEffect(() => {
-    if (!autoDetectNetwork || manualOverride) return;
-    const urls = [...new Set(sites.map((s) => s.url.internal))].filter(Boolean);
+    if (!currentAutoDetectNetwork || manualOverride) return;
+    const urls = [...new Set(currentSites.map((s) => s.url.internal))].filter(Boolean);
     detectNetwork(urls).then(setIsInternal);
-  }, [sites, manualOverride, autoDetectNetwork]);
+  }, [currentSites, manualOverride, currentAutoDetectNetwork]);
 
   const handleToggle = useCallback((val: boolean) => {
     setManualOverride(true);
@@ -185,15 +201,15 @@ export function HomePage({
   }, []);
 
   const filtered = useMemo(
-    () => (active === ALL ? sites : sites.filter((s) => s.category === active)),
-    [sites, active]
+    () => (active === ALL ? currentSites : currentSites.filter((s) => s.category === active)),
+    [currentSites, active]
   );
 
   return (
     <>
-      <SearchDialog sites={sites} categories={categories} isInternal={isInternal} open={searchOpen} onOpenChange={setSearchOpen} />
-      <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} />
-      <ShortcutHints sites={sites} isInternal={isInternal} onSearch={() => setSearchOpen(true)} shortcuts={shortcuts} />
+      <SearchDialog sites={currentSites} categories={currentCategories} isInternal={isInternal} open={searchOpen} onOpenChange={setSearchOpen} />
+      <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} onPayloadChange={syncHomeFromAdmin} />
+      <ShortcutHints sites={currentSites} isInternal={isInternal} onSearch={() => setSearchOpen(true)} shortcuts={currentShortcuts} />
 
       {/* 工具栏 */}
       <div className="mb-8 flex items-center justify-between">
@@ -207,7 +223,7 @@ export function HomePage({
           >
             <Search className="size-3.5" />
           </Button>
-          {!autoDetectNetwork && (
+          {!currentAutoDetectNetwork && (
             <>
               <div className="mx-0.5 h-4 w-px bg-border" />
               <NetworkToggle isInternal={isInternal} onToggle={handleToggle} />
@@ -231,7 +247,7 @@ export function HomePage({
 
       {/* 分类标签栏 */}
       <CategoryTabs
-        categories={categories}
+        categories={currentCategories}
         active={active}
         onSelect={setActive}
       />

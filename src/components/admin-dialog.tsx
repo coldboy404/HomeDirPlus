@@ -14,15 +14,17 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Settings, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminPayload } from "@/lib/admin-data";
+import { authHeaders, setStoredSessionToken } from "@/lib/client-api";
 
 type AdminDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onPayloadChange?: (payload: AdminPayload) => void;
 };
 
-type LoginResponse = { success: true } | { success: false; error?: string };
+type LoginResponse = { success: true; token: string } | { success: false; error?: string };
 
-export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
+export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialogProps) {
   const [password, setPassword] = useState("");
   const [payload, setPayload] = useState<AdminPayload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,13 +33,15 @@ export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
   const loadPayload = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/payload", { cache: "no-store" });
+      const res = await fetch("/api/admin/payload", { cache: "no-store", headers: authHeaders() });
       if (res.status === 401) {
         setPayload(null);
         return false;
       }
       if (!res.ok) throw new Error("payload");
-      setPayload((await res.json()) as AdminPayload);
+      const nextPayload = (await res.json()) as AdminPayload;
+      setPayload(nextPayload);
+      onPayloadChange?.(nextPayload);
       return true;
     } catch {
       toast.error("加载后台数据失败");
@@ -45,7 +49,7 @@ export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onPayloadChange]);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -75,6 +79,7 @@ export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
           toast.error(data.success === false && data.error ? data.error : "登录失败");
           return;
         }
+        setStoredSessionToken(data.token);
         setPassword("");
         toast.success("登录成功");
         await loadPayload();
@@ -106,7 +111,7 @@ export function AdminDialog({ open, onOpenChange }: AdminDialogProps) {
             正在加载后台...
           </div>
         ) : payload ? (
-          <AdminPanel {...payload} />
+          <AdminPanel {...payload} onMutated={async () => { await loadPayload(); }} />
         ) : (
           <form onSubmit={handleLogin} className="mx-auto w-full max-w-xs space-y-4 py-8">
             <div className="flex flex-col items-center gap-3 text-center">

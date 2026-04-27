@@ -1,12 +1,34 @@
 type ApiResult<T = unknown> = ({ success: true } & T) | { success: false; error: string };
 
+const SESSION_STORAGE_KEY = "homedirplus_admin_session";
+
 type RequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
+
+export function getStoredSessionToken(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(SESSION_STORAGE_KEY) || "";
+}
+
+export function setStoredSessionToken(token: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SESSION_STORAGE_KEY, token);
+}
+
+export function clearStoredSessionToken(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+export function authHeaders(headers?: HeadersInit): HeadersInit {
+  const token = getStoredSessionToken();
+  return token ? { ...(headers || {}), "x-admin-session": token } : (headers || {});
+}
 
 export async function apiPost<T = unknown>(url: string, options: RequestOptions = {}): Promise<ApiResult<T>> {
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      headers: authHeaders({ "Content-Type": "application/json", ...(options.headers || {}) }),
       ...options,
       body: JSON.stringify(options.body ?? {}),
     });

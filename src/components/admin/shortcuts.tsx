@@ -26,9 +26,11 @@ export interface ShortcutData {
 export function AdminShortcuts({
   shortcuts,
   sites,
+  onMutated,
 }: {
   shortcuts: ShortcutData[];
   sites: SiteData[];
+  onMutated?: () => void | Promise<void>;
 }) {
   const [key, setKey] = useState("");
   const [siteId, setSiteId] = useState("");
@@ -45,10 +47,11 @@ export function AdminShortcuts({
       const result = await apiPost("/api/admin/shortcuts", { body: { action: "create", key, siteId } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("热键已添加");
+      await onMutated?.();
       setKey("");
       setSiteId("");
     } finally { setAdding(false); }
-  }, [key, siteId, shortcuts]);
+  }, [key, siteId, shortcuts, onMutated]);
 
   const handleDelete = useCallback(async (id: string) => {
     setDeletingId(id);
@@ -56,8 +59,9 @@ export function AdminShortcuts({
       const result = await apiPost("/api/admin/shortcuts", { body: { action: "delete", id } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("热键已删除");
+      await onMutated?.();
     } finally { setDeletingId(null); }
-  }, []);
+  }, [onMutated]);
 
   const getSiteName = (id: string) => sites.find((s) => s.id === id)?.name || "未知站点";
 

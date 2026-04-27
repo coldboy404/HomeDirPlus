@@ -61,9 +61,11 @@ function groupSites(sites: SiteData[]) {
 export function AdminSites({
   sites,
   categories,
+  onMutated,
 }: {
   sites: SiteData[];
   categories: string[];
+  onMutated?: () => void | Promise<void>;
 }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -143,11 +145,12 @@ export function AdminSites({
       }
 
       toast.success(editingSite ? "站点已更新" : "站点已创建");
+      await onMutated?.();
       setEditDialogOpen(false);
     } finally {
       setSaving(false);
     }
-  }, [form, editingSite, setEditDialogOpen]);
+  }, [form, editingSite, setEditDialogOpen, onMutated]);
 
   const confirmDelete = (id: string) => {
     setDeletingId(id);
@@ -163,13 +166,14 @@ export function AdminSites({
         toast.error(result.error);
       } else {
         toast.success("站点已删除");
+        await onMutated?.();
       }
       setDeleteDialogOpen(false);
     } finally {
       setDeleting(false);
       setDeletingId(null);
     }
-  }, [deletingId]);
+  }, [deletingId, onMutated]);
 
   const updateField = (field: keyof SiteFormData, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -190,10 +194,11 @@ export function AdminSites({
         return;
       }
       toast.success("排序已保存");
+      await onMutated?.();
     } finally {
       setSavingOrder(false);
     }
-  }, [sites]);
+  }, [sites, onMutated]);
 
   const moveSite = useCallback((fromId: string, toId: string, targetCategory: string) => {
     if (fromId === toId) return;
@@ -220,12 +225,12 @@ export function AdminSites({
         return;
       }
       toast.success(`已导入 ${result.count} 个站点（${result.format === "sunpanel" ? "SunPanel" : "HomeDirPlus"}）`);
-      window.location.reload();
+      await onMutated?.();
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  }, []);
+  }, [onMutated]);
 
   const uploadIconFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) { toast.error("请选择图片文件"); return; }

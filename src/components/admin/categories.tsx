@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Loader2, Save, AlertTriangle } from "lucide-react";
 
-export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[]; categoryConfigs: CategoryConfig[] }) {
+export function AdminCategories({ sites, categoryConfigs, onMutated }: { sites: SiteData[]; categoryConfigs: CategoryConfig[]; onMutated?: () => void | Promise<void> }) {
   const categoryStats = useMemo(() => {
     const countMap = new Map<string, number>();
     const sortMap = new Map(categoryConfigs.map((category) => [category.name, category.sort_order]));
@@ -48,9 +48,10 @@ export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[];
       const result = await apiPost("/api/admin/categories", { body: { action: "rename", oldName: renameTarget, newName: name } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success(`分类已保存`);
+      await onMutated?.();
       setRenameTarget(null);
     } finally { setRenaming(false); }
-  }, [renameTarget, renameValue, sortValue]);
+  }, [renameTarget, renameValue, sortValue, onMutated]);
 
   // 删除
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -63,9 +64,10 @@ export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[];
       const result = await apiPost("/api/admin/categories", { body: { action: "delete", name: deleteTarget } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("分类及其站点已删除");
+      await onMutated?.();
       setDeleteTarget(null);
     } finally { setDeletingItem(false); }
-  }, [deleteTarget]);
+  }, [deleteTarget, onMutated]);
 
   return (
     <>

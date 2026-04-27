@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import type { AdminPayload } from "@/lib/admin-data";
+import type { AdminPanelProps } from "@/lib/admin-data";
 import { AdminOverview } from "@/components/admin/overview";
 import { AdminSites } from "@/components/admin/sites";
 import { AdminCategories } from "@/components/admin/categories";
@@ -28,7 +28,8 @@ export function AdminPanel({
   categoryConfigs,
   config,
   shortcuts,
-}: AdminPayload) {
+  onMutated,
+}: AdminPanelProps) {
   const [tab, setTabState] = useState<Tab>("overview");
   const [mounted, setMounted] = useState(false);
 
@@ -88,16 +89,16 @@ export function AdminPanel({
         <AdminOverview sites={sites} categoryCount={categoryCount} onNavigate={(t) => setTab(t as Tab)} />
       )}
       {tab === "sites" && (
-        <AdminSites sites={sites} categories={categories} />
+        <AdminSites sites={sites} categories={categories} onMutated={onMutated} />
       )}
       {tab === "categories" && (
-        <AdminCategories sites={sites} categoryConfigs={categoryConfigs} />
+        <AdminCategories sites={sites} categoryConfigs={categoryConfigs} onMutated={onMutated} />
       )}
       {tab === "shortcuts" && (
-        <AdminShortcuts shortcuts={shortcuts} sites={sites} />
+        <AdminShortcuts shortcuts={shortcuts} sites={sites} onMutated={onMutated} />
       )}
       {tab === "settings" && (
-        <AdminSettings config={config} />
+        <AdminSettings config={config} onMutated={onMutated} />
       )}
       {tab === "about" && (
         <AdminAbout />

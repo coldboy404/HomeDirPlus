@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticated, isAuthenticatedRequest } from "@/lib/auth";
 import {
   createShortcut,
   createSite,
@@ -46,13 +46,14 @@ function fail(error: string, status = 400) {
   return NextResponse.json({ success: false, error }, { status });
 }
 
-export async function requireAuthResult(): Promise<{ success: false; error: string } | null> {
-  if (!(await isAuthenticated())) return { success: false, error: "未登录" };
+export async function requireAuthResult(request?: Request): Promise<{ success: false; error: string } | null> {
+  const authenticated = request ? await isAuthenticatedRequest(request) : await isAuthenticated();
+  if (!authenticated) return { success: false, error: "未登录" };
   return null;
 }
 
-export async function requireAuthResponse(): Promise<NextResponse | null> {
-  const authErr = await requireAuthResult();
+export async function requireAuthResponse(request: Request): Promise<NextResponse | null> {
+  const authErr = await requireAuthResult(request);
   return authErr ? fail(authErr.error, 401) : null;
 }
 
