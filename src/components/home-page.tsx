@@ -33,7 +33,7 @@ function Clock() {
   }, []);
 
   return (
-    <div className="text-xs text-muted-foreground">
+    <div className="text-xs font-medium text-foreground/80">
       {now ? (
         <>
           <div>{getGreeting(now.getHours())} 👋</div>
@@ -120,7 +120,7 @@ function CategoryTabs({
                 ? mounted
                   ? "text-background"
                   : "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                : "text-foreground/75 hover:bg-accent/60 hover:text-foreground"
             }`}
             onClick={() => onSelect(cat)}
           >
@@ -148,7 +148,7 @@ async function probeInternal(url: string, timeout = 2000): Promise<boolean> {
 }
 
 async function detectNetwork(internalUrls: string[]): Promise<boolean> {
-  if (internalUrls.length === 0) return true;
+  if (internalUrls.length === 0) return false;
   // 取前 3 个内网地址并发探测，任一可达即为内网
   const targets = internalUrls.slice(0, 3);
   const results = await Promise.all(targets.map((url) => probeInternal(url)));
@@ -159,22 +159,24 @@ export function HomePage({
   sites,
   categories,
   shortcuts,
+  autoDetectNetwork,
 }: {
   sites: SiteData[];
   categories: string[];
   shortcuts: ShortcutConfig[];
+  autoDetectNetwork: boolean;
 }) {
   const [active, setActive] = useState(ALL);
-  const [isInternal, setIsInternal] = useState(true);
+  const [isInternal, setIsInternal] = useState(false);
   const [manualOverride, setManualOverride] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // 每次加载自动探测，手动切换后跳过
+  // 自动探测开启时检测内外网，手动切换后跳过
   useEffect(() => {
-    if (manualOverride) return;
+    if (!autoDetectNetwork || manualOverride) return;
     const urls = [...new Set(sites.map((s) => s.url.internal))].filter(Boolean);
     detectNetwork(urls).then(setIsInternal);
-  }, [sites, manualOverride]);
+  }, [sites, manualOverride, autoDetectNetwork]);
 
   const handleToggle = useCallback((val: boolean) => {
     setManualOverride(true);
@@ -198,7 +200,7 @@ export function HomePage({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+            className="h-7 px-2 text-foreground/75 hover:text-foreground"
             onClick={() => setSearchOpen(true)}
           >
             <Search className="size-3.5" />
@@ -212,7 +214,7 @@ export function HomePage({
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-muted-foreground hover:text-foreground"
+              className="h-7 px-2 text-foreground/75 hover:text-foreground"
             >
               <Settings className="size-3.5" />
             </Button>
@@ -259,7 +261,7 @@ export function HomePage({
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-medium">{site.name}</span>
-                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{site.desc}</p>
+                  <p className="mt-0.5 truncate text-[10px] font-medium text-foreground/70">{site.desc}</p>
                 </div>
               </a>
             );

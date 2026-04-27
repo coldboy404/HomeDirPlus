@@ -29,6 +29,7 @@ export default async function AdminPage() {
     background_image_url: config.background_image_url,
     background_blur: config.background_blur,
     site_logo_url: config.site_logo_url,
+    auto_detect_network: config.auto_detect_network,
   };
 
   return (

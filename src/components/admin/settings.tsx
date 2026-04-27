@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUp, Loader2, Save, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
-export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string } }) {
+export function AdminSettings({ config }: { config: { site_name: string; site_description: string; footer_text: string; background_image_url: string; background_blur: string; site_logo_url: string; auto_detect_network: string } }) {
   const [form, setForm] = useState({
     site_name: config.site_name,
     site_description: config.site_description,
@@ -16,6 +17,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
     background_image_url: config.background_image_url,
     background_blur: config.background_blur,
     site_logo_url: config.site_logo_url,
+    auto_detect_network: config.auto_detect_network,
   });
   const [saving, setSaving] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
@@ -116,6 +118,18 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
               onChange={(e) => setForm((p) => ({ ...p, footer_text: e.target.value }))}
             />
             <p className="text-[11px] text-muted-foreground">支持 HTML，留空则不显示</p>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border bg-muted/20 p-3">
+            <div className="grid gap-1">
+              <Label htmlFor="cfg_auto_detect_network">自动探测网络</Label>
+              <p className="text-[11px] text-muted-foreground">开启后首页会自动探测内网可达性；关闭时默认使用外网，仍可手动切换。</p>
+            </div>
+            <Switch
+              id="cfg_auto_detect_network"
+              checked={form.auto_detect_network === "true"}
+              onCheckedChange={(checked) => setForm((p) => ({ ...p, auto_detect_network: checked ? "true" : "false" }))}
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="cfg_logo">主站图标</Label>

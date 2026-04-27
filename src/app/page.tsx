@@ -32,14 +32,14 @@ export default async function Page() {
             <Terminal className="size-5" />
           )}
           <span className="flex-1 text-sm font-semibold tracking-tight">{config.site_name}</span>
-          <a href="https://github.com/coldboy404/HomeDirPlus" target="_blank" rel="noopener noreferrer" className="text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+          <a href="https://github.com/coldboy404/HomeDirPlus" target="_blank" rel="noopener noreferrer" className="text-foreground/65 transition-colors hover:text-foreground">
             <GithubIcon className="size-4" />
           </a>
         </header>
 
         {/* 交互区域 — Client Component */}
         <div className="flex-1">
-          <HomePage sites={sites} categories={categories} shortcuts={shortcuts} />
+          <HomePage sites={sites} categories={categories} shortcuts={shortcuts} autoDetectNetwork={config.auto_detect_network === "true"} />
         </div>
 
         {/* 底部 */}
