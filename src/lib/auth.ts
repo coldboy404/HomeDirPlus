@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { createHash, randomBytes } from "crypto";
 import { getConfig, updateConfig } from "@/lib/db";
 
+export const SESSION_STORAGE_KEY = "homedirplus_admin_session";
+
 const COOKIE_NAME = "admin_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 天
 const SESSION_HEADER = "x-admin-session";

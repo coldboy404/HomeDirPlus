@@ -16,7 +16,12 @@ RUN pnpm build \
     # Next standalone tracing may include both glibc and musl sharp binaries.\
     # The runtime image is Alpine/musl, so the glibc variants are dead weight.\
     && rm -rf .next/standalone/node_modules/.pnpm/@img+sharp-libvips-linux-x64@* \
-              .next/standalone/node_modules/.pnpm/@img+sharp-linux-x64@*
+              .next/standalone/node_modules/.pnpm/@img+sharp-linux-x64@* \
+    # The standalone server does not need development-only Next internals or font metric tables at runtime.\
+    && rm -f .next/standalone/node_modules/.pnpm/next@*/node_modules/next/dist/server/capsize-font-metrics.json \
+    && rm -rf .next/standalone/node_modules/.pnpm/next@*/node_modules/next/dist/server/dev \
+              .next/standalone/node_modules/.pnpm/next@*/node_modules/next/dist/compiled/webpack \
+              .next/standalone/node_modules/.pnpm/next@*/node_modules/next/dist/compiled/babel*
 
 FROM base AS runner
 WORKDIR /app

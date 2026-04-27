@@ -20,13 +20,15 @@ type AdminDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPayloadChange?: (payload: AdminPayload) => void;
+  authenticated: boolean;
 };
 
 type LoginResponse = { success: true; token: string } | { success: false; error?: string };
 
-export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialogProps) {
+export function AdminDialog({ open, onOpenChange, onPayloadChange, authenticated }: AdminDialogProps) {
   const [password, setPassword] = useState("");
   const [payload, setPayload] = useState<AdminPayload | null>(null);
+  const [hasSession, setHasSession] = useState(authenticated);
   const [loading, setLoading] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
 
@@ -36,11 +38,13 @@ export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialog
       const res = await fetch("/api/admin/payload", { cache: "no-store", headers: authHeaders() });
       if (res.status === 401) {
         setPayload(null);
+        setHasSession(false);
         return false;
       }
       if (!res.ok) throw new Error("payload");
       const nextPayload = (await res.json()) as AdminPayload;
       setPayload(nextPayload);
+      setHasSession(true);
       onPayloadChange?.(nextPayload);
       return true;
     } catch {
@@ -80,6 +84,7 @@ export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialog
           return;
         }
         setStoredSessionToken(data.token);
+        setHasSession(true);
         setPassword("");
         toast.success("登录成功");
         await loadPayload();
@@ -112,7 +117,7 @@ export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialog
           </div>
         ) : payload ? (
           <AdminPanel {...payload} onMutated={async () => { await loadPayload(); }} />
-        ) : (
+        ) : !hasSession ? (
           <form onSubmit={handleLogin} className="mx-auto w-full max-w-xs space-y-4 py-8">
             <div className="flex flex-col items-center gap-3 text-center">
               <div className="flex size-12 items-center justify-center rounded-xl bg-foreground">
@@ -137,6 +142,11 @@ export function AdminDialog({ open, onOpenChange, onPayloadChange }: AdminDialog
               登录
             </Button>
           </form>
+        ) : (
+          <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+            <Loader2 className="mr-2 size-4 animate-spin" />
+            正在恢复登录状态...
+          </div>
         )}
       </DialogContent>
     </Dialog>

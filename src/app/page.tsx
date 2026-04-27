@@ -1,7 +1,8 @@
-import { Terminal } from "lucide-react";
-import { GithubIcon } from "@/components/icons/github";
 import { getSites } from "@/lib/sites";
+import { GithubIcon } from "@/components/icons/github";
 import { HomePage } from "@/components/home-page";
+import { Terminal } from "lucide-react";
+import { isAuthenticated } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export default async function Page() {
   const backgroundImage = config.background_image_url.trim();
   const backgroundBlur = Math.min(24, Math.max(0, Number(config.background_blur) || 0));
   const siteLogo = config.site_logo_url.trim();
+  const authenticated = await isAuthenticated();
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
@@ -24,7 +26,6 @@ export default async function Page() {
         </>
       )}
       <div className="mx-auto flex min-h-dvh max-w-5xl flex-col px-4 pt-8 sm:px-6 lg:px-8">
-        {/* 标题 — Server Component，0 JS */}
         <header className="mb-8 flex items-center gap-2.5">
           {siteLogo ? (
             <img src={siteLogo} alt="" className="size-5 rounded object-contain" />
@@ -37,12 +38,10 @@ export default async function Page() {
           </a>
         </header>
 
-        {/* 交互区域 — Client Component */}
         <div className="flex-1">
-          <HomePage sites={sites} categories={categories} shortcuts={shortcuts} autoDetectNetwork={config.auto_detect_network === "true"} />
+          <HomePage sites={sites} categories={categories} shortcuts={shortcuts} autoDetectNetwork={config.auto_detect_network === "true"} authenticated={authenticated} />
         </div>
 
-        {/* 底部 */}
         <footer className="mt-auto flex flex-col items-center gap-4 pb-4 pt-8">
           {config.footer_text && (
             <p className="text-[11px] text-muted-foreground/60 [&_a]:no-underline [&_a]:hover:text-muted-foreground" dangerouslySetInnerHTML={{ __html: config.footer_text }} />

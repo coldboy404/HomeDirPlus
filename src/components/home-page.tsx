@@ -161,11 +161,13 @@ export function HomePage({
   categories,
   shortcuts,
   autoDetectNetwork,
+  authenticated,
 }: {
   sites: SiteData[];
   categories: string[];
   shortcuts: ShortcutConfig[];
   autoDetectNetwork: boolean;
+  authenticated: boolean;
 }) {
   const [active, setActive] = useState(ALL);
   const [isInternal, setIsInternal] = useState(false);
@@ -208,7 +210,7 @@ export function HomePage({
   return (
     <>
       <SearchDialog sites={currentSites} categories={currentCategories} isInternal={isInternal} open={searchOpen} onOpenChange={setSearchOpen} />
-      <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} onPayloadChange={syncHomeFromAdmin} />
+      <AdminDialog open={adminOpen} onOpenChange={setAdminOpen} onPayloadChange={syncHomeFromAdmin} authenticated={authenticated} />
       <ShortcutHints sites={currentSites} isInternal={isInternal} onSearch={() => setSearchOpen(true)} shortcuts={currentShortcuts} />
 
       {/* 工具栏 */}
