@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { SiteData } from "@/lib/types";
-import { createShortcutAction, deleteShortcutAction } from "@/app/dash/actions";
+import { apiPost } from "@/lib/client-api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +42,7 @@ export function AdminShortcuts({
     if (shortcuts.some((s) => s.key.toUpperCase() === upperKey)) { toast.error(`⌘${upperKey} 已被占用`); return; }
     setAdding(true);
     try {
-      const result = await createShortcutAction(key, siteId);
+      const result = await apiPost("/api/admin/shortcuts", { body: { action: "create", key, siteId } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("热键已添加");
       setKey("");
@@ -53,7 +53,7 @@ export function AdminShortcuts({
   const handleDelete = useCallback(async (id: string) => {
     setDeletingId(id);
     try {
-      const result = await deleteShortcutAction(id);
+      const result = await apiPost("/api/admin/shortcuts", { body: { action: "delete", id } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("热键已删除");
     } finally { setDeletingId(null); }

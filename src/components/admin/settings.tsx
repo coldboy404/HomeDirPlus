@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { updateConfigAction, uploadBackgroundAction, uploadSiteLogoAction } from "@/app/dash/actions";
+import { apiPost, readFileAsDataUrl } from "@/lib/client-api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
     if (file.size > 8 * 1024 * 1024) { toast.error("背景图片不能超过 8MB"); return; }
     setUploadingBackground(true);
     try {
-      const result = await uploadBackgroundAction(await readFileAsDataUrl(file));
+      const result = await apiPost<{ data: string }>("/api/admin/config", { body: { action: "upload", kind: "background", dataUrl: await readFileAsDataUrl(file) } });
       if (!result.success) { toast.error(result.error); return; }
       setForm((p) => ({ ...p, background_image_url: result.data }));
       toast.success("背景图片已上传，记得保存配置");
@@ -52,7 +52,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
     if (file.size > 4 * 1024 * 1024) { toast.error("主站图标不能超过 4MB"); return; }
     setUploadingLogo(true);
     try {
-      const result = await uploadSiteLogoAction(await readFileAsDataUrl(file));
+      const result = await apiPost<{ data: string }>("/api/admin/config", { body: { action: "upload", kind: "site-logo", dataUrl: await readFileAsDataUrl(file) } });
       if (!result.success) { toast.error(result.error); return; }
       setForm((p) => ({ ...p, site_logo_url: result.data }));
       toast.success("主站图标已上传，记得保存配置");
@@ -79,7 +79,7 @@ export function AdminSettings({ config }: { config: { site_name: string; site_de
     }
     setSaving(true);
     try {
-      const result = await updateConfigAction(form);
+      const result = await apiPost("/api/admin/config", { body: { action: "update", config: form } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("配置已保存");
     } finally { setSaving(false); }

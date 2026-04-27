@@ -3,16 +3,7 @@
 import { useMemo, useRef, useState, useCallback } from "react";
 import type { SiteData } from "@/lib/types";
 import { getIcon, getSiteIconUrl, commonIcons } from "@/lib/icons";
-import {
-  createSiteAction,
-  updateSiteAction,
-  deleteSiteAction,
-  exportSitesAction,
-  fetchFaviconAction,
-  importSitesAction,
-  reorderSitesAction,
-  uploadSiteIconAction,
-} from "@/app/dash/actions";
+import { apiPost, readFileAsDataUrl } from "@/lib/client-api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,8 +134,8 @@ export function AdminSites({
       };
 
       const result = editingSite
-        ? await updateSiteAction(editingSite, data)
-        : await createSiteAction(data);
+        ? await apiPost("/api/admin/sites", { body: { action: "update", id: editingSite, data } })
+        : await apiPost("/api/admin/sites", { body: { action: "create", data } });
 
       if (!result.success) {
         toast.error(result.error);
@@ -167,7 +158,7 @@ export function AdminSites({
     if (!deletingId) return;
     setDeleting(true);
     try {
-      const result = await deleteSiteAction(deletingId);
+      const result = await apiPost("/api/admin/sites", { body: { action: "delete", id: deletingId } });
       if (!result.success) {
         toast.error(result.error);
       } else {
@@ -192,7 +183,7 @@ export function AdminSites({
       const payload = Object.values(groupSites(nextSites)).flatMap((group) =>
         group.map((site, index) => ({ id: site.id, category: site.category, sort_order: index + 1 }))
       );
-      const result = await reorderSitesAction(payload);
+      const result = await apiPost("/api/admin/sites", { body: { action: "reorder", items: payload } });
       if (!result.success) {
         toast.error(result.error);
         setOrderedSites(sites);
@@ -223,7 +214,7 @@ export function AdminSites({
     setImporting(true);
     try {
       const text = await file.text();
-      const result = await importSitesAction(text, mode);
+      const result = await apiPost<{ count: number; format: "homedirplus" | "sunpanel" }>("/api/admin/sites", { body: { action: "import", jsonText: text, mode } });
       if (!result.success) {
         toast.error(result.error);
         return;
@@ -241,13 +232,8 @@ export function AdminSites({
     if (file.size > 2 * 1024 * 1024) { toast.error("站点图标不能超过 2MB"); return; }
     setUploadingIcon(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
-      const result = await uploadSiteIconAction(dataUrl);
+      const dataUrl = await readFileAsDataUrl(file);
+      const result = await apiPost<{ data: string }>("/api/admin/config", { body: { action: "upload", kind: "site-icon", dataUrl } });
       if (!result.success) { toast.error(result.error); return; }
       updateField("icon_custom_url", result.data);
       updateField("icon_url", "");
@@ -259,7 +245,7 @@ export function AdminSites({
   }, []);
 
   const handleExport = useCallback(async () => {
-    const result = await exportSitesAction();
+      const result = await apiPost<{ data: string }>("/api/admin/sites", { body: { action: "export" } });
     if (!result.success) {
       toast.error(result.error);
       return;
@@ -538,7 +524,7 @@ export function AdminSites({
                     if (!url) return;
                     setFetchingIcon(true);
                     try {
-                      const result = await fetchFaviconAction(url);
+                      const result = await apiPost<{ data: string }>("/api/admin/sites", { body: { action: "favicon", url } });
                       if (result.success) {
                         updateField("icon_url", result.data);
                         updateField("icon_custom_url", "");

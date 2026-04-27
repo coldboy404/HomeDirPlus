@@ -3,11 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import type { CategoryConfig, SiteData } from "@/lib/types";
 import { getIcon, getSiteIconUrl } from "@/lib/icons";
-import {
-  renameCategoryAction,
-  deleteCategoryAction,
-  updateCategorySortAction,
-} from "@/app/dash/actions";
+import { apiPost } from "@/lib/client-api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,9 +43,9 @@ export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[];
     setRenaming(true);
     try {
       const name = renameValue.trim();
-      const sortResult = await updateCategorySortAction(renameTarget, sortValue);
+      const sortResult = await apiPost("/api/admin/categories", { body: { action: "sort", name: renameTarget, sortOrder: sortValue } });
       if (!sortResult.success) { toast.error(sortResult.error); return; }
-      const result = await renameCategoryAction(renameTarget, name);
+      const result = await apiPost("/api/admin/categories", { body: { action: "rename", oldName: renameTarget, newName: name } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success(`分类已保存`);
       setRenameTarget(null);
@@ -64,7 +60,7 @@ export function AdminCategories({ sites, categoryConfigs }: { sites: SiteData[];
     if (!deleteTarget) return;
     setDeletingItem(true);
     try {
-      const result = await deleteCategoryAction(deleteTarget);
+      const result = await apiPost("/api/admin/categories", { body: { action: "delete", name: deleteTarget } });
       if (!result.success) { toast.error(result.error); return; }
       toast.success("分类及其站点已删除");
       setDeleteTarget(null);
