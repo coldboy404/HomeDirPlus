@@ -5,12 +5,9 @@ import { LoginForm } from "./login-form";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ next?: string }> }) {
-  const params = await searchParams;
-  const next = params?.next?.startsWith("/") && !params.next.startsWith("//") ? params.next : "/";
-
+export default async function LoginPage() {
   // 已登录则跳转
-  if (await isAuthenticated()) redirect(next);
+  if (await isAuthenticated()) redirect("/dash");
 
   const needSetup = !hasPassword();
 
@@ -28,7 +25,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
             </p>
           </div>
         </div>
-        <LoginForm needSetup={needSetup} next={next} />
+        <LoginForm needSetup={needSetup} />
         <p className="mt-6 text-center text-[10px] text-muted-foreground/40">HomeDirPlus</p>
       </div>
     </div>

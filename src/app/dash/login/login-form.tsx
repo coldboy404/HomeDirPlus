@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { setupAction, loginAction } from "./actions";
 
-export function LoginForm({ needSetup, next }: { needSetup: boolean; next: string }) {
+export function LoginForm({ needSetup }: { needSetup: boolean }) {
   const [state, formAction, pending] = useActionState(
     needSetup ? setupAction : loginAction,
     {}
@@ -23,7 +23,6 @@ export function LoginForm({ needSetup, next }: { needSetup: boolean; next: strin
 
   return (
     <form action={formAction} className="space-y-3">
-      <input type="hidden" name="next" value={next} />
       <Input
         name="password"
         type="password"

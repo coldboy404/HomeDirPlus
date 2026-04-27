@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { getSites } from "@/lib/sites";
 import { getAllShortcuts } from "@/lib/db";
 import { AdminPanel } from "@/components/admin-panel";
 import { logoutAction } from "./login/actions";
+import { isAuthenticated, hasPassword } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "管理",
@@ -14,6 +16,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  if (!hasPassword() || !(await isAuthenticated())) redirect("/dash/login");
+
   const { sites, categories, categoryConfigs, config } = getSites();
   const shortcuts = getAllShortcuts().map((s) => ({ id: s.id, key: s.key, site_id: s.site_id }));
 

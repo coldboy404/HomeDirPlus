@@ -2,14 +2,10 @@ import { Terminal } from "lucide-react";
 import { GithubIcon } from "@/components/icons/github";
 import { getSites } from "@/lib/sites";
 import { HomePage } from "@/components/home-page";
-import { hasPassword, isAuthenticated } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  if (!hasPassword() || !(await isAuthenticated())) redirect("/dash/login?next=/");
-
   const { sites, categories, config, shortcuts } = getSites();
   const backgroundImage = config.background_image_url.trim();
   const backgroundBlur = Math.min(24, Math.max(0, Number(config.background_blur) || 0));
